@@ -1,37 +1,29 @@
-## Welcome to GitHub Pages
+# Fungible Models Language
 
-You can use the [editor on GitHub](https://github.com/matthewhammer/fumola-lang/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+Work in progress.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+# Vision statement (draft)
 
-### Markdown
+The language where program behaviors on a global store (as effects) have a representation within the language's data model.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+Fumola is a programming language for describing programs that describe themselves to themselves, over time.  To avoid the confusion of this circular defintion, Fumola uses a type system that classifies stored values (including both store names and stored names) and stored computations that have run, in a fine-grained way.  Only the latter have an associated data model representation for their (traced and retained) program behavior.
 
-```markdown
-Syntax highlighted code block
+In Fumola, behavior becomes data in a systematic way, with refinement types that verify correct usage and avoid mismatched consumption-production linkage between programs that inspect behavior (data/behavior consumers) and programs that do the behavior (data/behavior producers).  In practical examples, programs mix these modes, and so Fumola uses general-purpose approach with type connectives for stored values, and for symbolic names of stored values.
 
-# Header 1
-## Header 2
-### Header 3
+The type system of Fumola internalizes aspects of a powerful, but specialized, effect system that describe approximations of each subcomputation's effects on the global store of named values.
 
-- Bulleted
-- List
+To verify programs that use the store, the type system of Fumola internalizes the structure of how names compose and decompose while preserving their mutual distinctions (their individual uniqueness, relative to some salient set of "sibling names").  Stored computations, when run (and re-run) produce (and incrementally replace) stored program traces, the concrete data classified by store effects.  The type and effect system is sound in the sense that these effects always describe the program traces that they approximate accurately.
 
-1. Numbered
-2. List
+## "Fungible"
 
-**Bold** and _Italic_ and `Code` text
+![image](https://user-images.githubusercontent.com/1183963/112759033-7716da80-8fae-11eb-917f-2cfeeebea3af.png)
 
-[Link](url) and ![Image](src)
-```
+## "Models"
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+Program behavior modeled with data.
 
-### Jekyll Themes
+https://en.wikipedia.org/wiki/Model_organism for each system concept in a domain or system to be described, but written as Fumola computations whose behavior becomes (model) data.
+ 
+## "Language"
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/matthewhammer/fumola-lang/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+https://en.wikipedia.org/wiki/Programming_language
