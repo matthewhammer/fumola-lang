@@ -8,43 +8,78 @@ G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
  | G , x : sort :: :: hasSort
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
+ | ! :: :: bang
+ | " :: :: dtick
+ | # :: :: hashsign
+ | $ :: :: dollar
+ | & :: :: amp
+ | ' :: :: tick
+ | '|' :: :: pipe
+ | * :: :: star
+ | + :: :: plus
+ | , :: :: comma
+ | - :: :: dash
+ | . :: :: dot
+ | / :: :: fslash
  | 0 :: :: zero
  | 1 :: :: one
  | 2 :: :: two
  | 3 :: :: three
- | apple :: :: apple
- | banana :: :: banana
+ | 4 :: :: four
+ | 5 :: :: five
+ | 6 :: :: six
+ | 7 :: :: seven
+ | 8 :: :: eight
+ | 9 :: :: nine
+ | : :: :: colon
+ | ; :: :: semi
+ | < :: :: less
  | = :: :: equalsign
- | => :: :: arrowright
- | <= :: :: arrowleft
- | # :: :: hashsign
+ | > :: :: grtr
+ | ? :: :: quest
  | @ :: :: atsign
- | . :: :: dot
- | - :: :: dash
+ | \ :: :: bslash
+ | ^ :: :: caret
+ | _ :: :: under
+ | ` :: :: btick
+ | ~ :: :: tilde
+ | a :: :: a
+ | z :: :: z
+ | 'A' :: :: A
+ | 'Z' :: :: Z
 
 S :: 'syms_ ::= {{ com Symbol sequence. }}
  | :: :: empty
  | s S :: :: oneMore
+ | ( S ) :: :: balParen
+ | [ S ] :: :: balBrack
+ | { S } :: :: balBrace
 
 X, Y, Z :: 'term_' ::= {{ com Name terms. }}
+ | as sort have X :: :: annotate
  | $ S :: :: symbols
- | X : sort :: :: annotate
+ | $( S ) :: :: symbolsDelim
+ | !$ X :: :: flatten
  | X * Y :: :: binaryForm
  | X * [ Y ] Z :: :: ternaryForm
  | X , Y :: :: gather
  | \ x => X :: :: defineFn (+ bind x in X +)
  | \ x := X :: :: defineRec (+ bind x in X +)
+ | X ^* Y :: :: stepStar
+ | X +* Y :: :: plusStar
+ | X >> Y :: :: map
  | X Y :: :: applyFn
  | X => Y :: :: associate
  | X % Y :: :: project
+ | ( X ) :: :: paren
 
 sort {{ tex \gamma }} :: 'sort_' ::= {{ com Sorts. }}
  | #syms :: :: syms
- | #rec x ( sort ) :: :: rec
  | #set ( sort ) :: :: set
  | #ord ( sort ) :: :: ord
  | #map ( sort1 , sort2 ) :: :: map
  | sort1 -> sort2 :: :: arrow
+ | ( sort ) :: :: paren
 
 kind {{ tex \nonterm K }} :: kind_ ::= {{ com Kinds. }}
  | #type :: :: type
@@ -57,7 +92,140 @@ single X x :: tsubst
 defns J :: '' ::= 
 
 defn
+G |- sort1 = sort2 : kind ::  :: sortEqual :: 'sort_' by
+
+defn
+#sortIsFlat sort ::  :: sortIsFlat :: 'sortIsFlat_' by
+
+------------------ :: syms
+#sortIsFlat #syms
+
+#sortIsFlat sort
+----------------------- :: set
+#sortIsFlat #set(sort)
+
+#sortIsFlat sort1
+#sortIsFlat sort2
+------------------------------ :: map
+#sortIsFlat #map(sort1, sort2)
+
+defn
 G |- X : sort ::  :: sort :: 'sort_' by
 
 ----------------- :: symbols
 G |- $ S : #syms
+
+G |- X : sort
+#sortIsFlat sort
+----------------- :: flatten
+G |- !$ X : #syms
+
+G |- X : sort2
+G |- sort1 = sort2 : kind
+---------------------------- :: annot
+G |- as sort1 have X : sort1
+
+
+G |- X : #syms
+G |- Y : sort
+#sortIsFlat sort
+-------------------------------- :: symsL
+G |- X * Y : sort
+
+G |- X : sort
+G |- Y : #syms
+#sortIsFlat sort
+-------------------------------- :: symsR
+G |- X * Y : sort
+
+G |- X : #syms
+G |- Y : #syms
+G |- Z : sort
+#sortIsFlat sort
+------------------------ :: ternL
+G |- X *[ Y ] Z : sort
+
+G |- X : sort
+G |- Y : #syms
+G |- Z : #syms
+#sortIsFlat sort
+------------------------ :: ternR
+G |- X *[ Y ] Z : sort
+
+
+
+G |- X : #set(sort)
+G |- Y : #set(sort)
+------------------------ :: gSet
+G |- X , Y : #set(sort)
+
+G |- X : #ord(sort)
+G |- Y : #ord(sort)
+------------------------ :: gOrd
+G |- X , Y : #ord(sort)
+
+G |- X : #map(sort1, sort2)
+G |- Y : #map(sort1, sort2)
+--------------------------------- :: gMap
+G |- X , Y : #map(sort1, sort2)
+
+G, x : sort1 |- X : sort2
+-------------------------- :: fn
+G |- \x => X : sort1 -> sort2
+
+G, x : sort |- X : sort
+-------------------------- :: rec
+G |- \x := X : sort
+
+G |- X : sort1 -> sort2
+G |- Y : sort1
+------------------- :: app
+G |- X Y : sort2
+
+
+G |- X : sort1
+G |- Y : sort2
+--------------------------------- :: associate
+G |- X => Y : #map(sort1, sort2)
+
+G |- X : #map(sort1, sort2)
+G |- Y : sort1
+--------------------------------- :: projMem
+G |- X % Y : sort2
+
+G |- X : #map(sort1, sort2)
+G |- Y : #set(sort1)
+--------------------------------- :: projSet
+G |- X % Y : #set(sort2)
+
+
+G |- X : #set(sort)
+G |- Y : sort -> #set(sort)
+---------------------------- :: stepStar
+G |- X ^* Y : #set(sort)
+
+G |- X : #set(sort)
+G |- Y : sort -> #set(sort)
+---------------------------- :: plusStar
+G |- X +* Y : #set(sort)
+
+
+G |- X : #syms
+G |- Y : #syms -> #syms
+---------------------------- :: mapSyms
+G |- X >> Y : #syms
+
+G |- X : #set(sort)
+G |- Y : sort -> #set(sort)
+---------------------------- :: mapSet
+G |- X >> Y : #set(sort)
+
+G |- X : #ord(sort)
+G |- Y : sort -> #ord(sort)
+---------------------------- :: mapOrd
+G |- X >> Y : #ord(sort)
+
+G |- X : #map(sort1, sort2)
+G |- Y : sort1 -> (sort2 -> #map(sort1', sort2'))
+------------------------------------------------- :: mapMap
+G |- X >> Y : #map(sort1', sort2')
