@@ -1,0 +1,63 @@
+metavar x ::=  
+{{ coq nat}} {{ coq-equality }}
+
+grammar
+G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
+ | #empty       :: :: empty
+ | G , x : kind :: :: hasKind
+ | G , x : sort :: :: hasSort
+
+s :: 'sym_' ::= {{ com Atomic symbols. }}
+ | 0 :: :: zero
+ | 1 :: :: one
+ | 2 :: :: two
+ | 3 :: :: three
+ | apple :: :: apple
+ | banana :: :: banana
+ | = :: :: equalsign
+ | => :: :: arrowright
+ | <= :: :: arrowleft
+ | # :: :: hashsign
+ | @ :: :: atsign
+ | . :: :: dot
+ | - :: :: dash
+
+S :: 'syms_ ::= {{ com Symbol sequence. }}
+ | :: :: empty
+ | s S :: :: oneMore
+
+X, Y, Z :: 'term_' ::= {{ com Name terms. }}
+ | $ S :: :: symbols
+ | X : sort :: :: annotate
+ | X * Y :: :: binaryForm
+ | X * [ Y ] Z :: :: ternaryForm
+ | X , Y :: :: gather
+ | \ x => X :: :: defineFn (+ bind x in X +)
+ | \ x := X :: :: defineRec (+ bind x in X +)
+ | X Y :: :: applyFn
+ | X => Y :: :: associate
+ | X % Y :: :: project
+
+sort {{ tex \gamma }} :: 'sort_' ::= {{ com Sorts. }}
+ | #syms :: :: syms
+ | #rec x ( sort ) :: :: rec
+ | #set ( sort ) :: :: set
+ | #ord ( sort ) :: :: ord
+ | #map ( sort1 , sort2 ) :: :: map
+ | sort1 -> sort2 :: :: arrow
+
+kind {{ tex \nonterm K }} :: kind_ ::= {{ com Kinds. }}
+ | #type :: :: type
+ | #sort :: :: sort
+ | kind1 -> kind2 :: :: arrow
+
+substitutions
+single X x :: tsubst
+
+defns J :: '' ::= 
+
+defn
+G |- X : sort ::  :: sort :: 'sort_' by
+
+----------------- :: symbols
+G |- $ S : #syms
