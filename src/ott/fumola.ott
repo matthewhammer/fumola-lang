@@ -2,18 +2,30 @@ metavar x ::=
 {{ coq nat}} {{ coq-equality }}
 
 grammar
+
+terminals :: 'terminals_' ::=
+| \ :: :: lambda {{ tex \lambda }}
+| -> :: :: rightarrow {{ tex \rightarrow }}
+| => :: :: thickrightarrow {{ tex \Rightarrow }}
+| #map :: :: map {{ tex \texttt{map} }}
+| #set :: :: set {{ tex \texttt{set} }}
+| #ord :: :: ord {{ tex \texttt{ord} }}
+| #    :: :: hash {{ tex \texttt{\#} }}
+| #empty :: :: empty {{ tex \cdot }}
+| ~ :: :: tilde {{ tex \sim }}
+
 G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
- | #empty       :: :: empty
+ | #empty       :: :: empty {{ tex \cdot }}
  | G , x : kind :: :: hasKind
  | G , x : sort :: :: hasSort
  | G , x : A    :: :: hasType
 
 A :: 'A_' ::= {{ com Value types. }}
- | X :: :: symbolSingleton
- | ~ X :: :: approxSymbols
- | & X :: :: addressSingleton
- | @ X :: :: approxAddress
- | [ C ] :: :: computationType
+ | X :: :: preciseSymbol
+ | ~ X :: :: approxSymbol
+ | & X :: :: preciseAddress
+ | ~ & X :: :: approxAddress
+ | { C } :: :: computationType
  | { variantCases } :: :: variantType
  | { recordFields } :: :: productType
 
@@ -38,8 +50,8 @@ namedComps :: 'namedComps_' ::=
 E :: 'E_' ::= {{ com Computation effects. }}
  | #empty :: :: empty
  | E1 ; E2 :: :: sequence
- | @ X := A :: :: put
- | @@ X :: :: get
+ | X := A :: :: put
+ | @ X :: :: get
 
 S :: 'syms_ ::= {{ com Symbol sequences. }}
  | :: :: empty
@@ -91,8 +103,8 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | \ x => e :: :: defineFn
  | e v :: :: applyFn
  | assert v1 = v2 :: :: assertEq
- | @ v1 := v2 :: :: put
- | @@ v1 :: :: get
+ | v1 := v2 :: :: put
+ | @ v1 :: :: get
  | { namedBranches } :: :: namedBranches
  | e => v :: :: selectBranch
  | desugar [[ eS ]] :: :: sugar {{ com implicitly placed by full-syntax parser. }}
@@ -163,7 +175,7 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | 'Z' :: :: Z
 
 
-kind {{ tex \nonterm K }} :: kind_ ::= {{ com Kinds. }}
+kind {{ tex K }} :: kind_ ::= {{ com Kinds. }}
  | #type :: :: type
  | #sort :: :: sort
  | kind1 -> kind2 :: :: arrow
@@ -311,3 +323,4 @@ G |- X : #map(sort1, sort2)
 G |- Y : sort1 -> (sort2 -> #map(sort1', sort2'))
 ------------------------------------------------- :: mapMap
 G |- X >> Y : #map(sort1', sort2')
+
