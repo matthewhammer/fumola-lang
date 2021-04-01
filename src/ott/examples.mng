@@ -1,0 +1,22 @@
+\documentclass[11pt]{article}
+\begin{document}
+
+\paragraph{Meta variable for program variables}
+
+\[ [[ x ]]\]
+
+\paragraph{Symbol sequences}
+
+\[ [[ a ]]\]
+
+\[ [[ z ]]\]
+
+\[ [[ a z a ]]\]
+
+\[ [[ a z z a ]]\]
+
+\paragraph{Symbol sequences as injected values}
+
+\[ [[ # $ a z z a ]]\]
+
+\end{document}

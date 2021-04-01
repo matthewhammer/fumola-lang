@@ -7,3 +7,7 @@ ott \
     -tex_wrap true \
     -o fumola.tex \
     -o fumola.v
+
+ott \
+    -i fumola.ott \
+    -tex_filter examples.mng examples.tex
