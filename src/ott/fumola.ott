@@ -6,6 +6,120 @@ G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
  | #empty       :: :: empty
  | G , x : kind :: :: hasKind
  | G , x : sort :: :: hasSort
+ | G , x : A    :: :: hasType
+
+A :: 'A_' ::= {{ com Value types. }}
+ | X :: :: symbolSingleton
+ | ~ X :: :: approxSymbols
+ | & X :: :: addressSingleton
+ | @ X :: :: approxAddress
+ | [ C ] :: :: computationType
+ | { variantCases } :: :: variantType
+ | { recordFields } :: :: productType
+
+variantCases :: 'variantCases_' ::=
+ | :: :: empty
+ | # X : A :: :: variant
+
+recordFields :: 'recordFields_' ::=
+ | :: :: empty
+ | X : A :: :: variant
+
+C :: 'C_' ::= {{ com Computation types. }}
+ | E ; C :: :: effectComp
+ | A -> C :: :: argumentValue
+ | A :: :: returnValue
+ | { namedComps } :: :: namedComps
+
+namedComps :: 'namedComps_' ::=
+ | :: :: empty
+ | X => C , namedComps :: :: namedComps
+
+E :: 'E_' ::= {{ com Computation effects. }}
+ | #empty :: :: empty
+ | E1 ; E2 :: :: sequence
+ | @ X := A :: :: put
+ | @@ X :: :: get
+
+S :: 'syms_ ::= {{ com Symbol sequences. }}
+ | :: :: empty
+ | s S :: :: oneMore
+ | ( S ) :: :: balParen
+ | [ S ] :: :: balBrack
+ | { S } :: :: balBrace
+
+sort {{ tex \gamma }} :: 'sort_' ::= {{ com Name sorts. }}
+ | #syms :: :: syms
+ | #set ( sort ) :: :: set
+ | #ord ( sort ) :: :: ord
+ | #map ( sort1 , sort2 ) :: :: map
+ | sort1 -> sort2 :: :: arrow
+ | ( sort ) :: :: paren
+
+X, Y, Z :: 'term_' ::= {{ com Symbolic-name terms. }}
+ | as sort have X :: :: annotate
+ | $ S :: :: symbols
+ | $( S ) :: :: symbolsDelim
+ | !$ X :: :: flatten
+ | X * Y :: :: binaryForm
+ | X * [ Y ] Z :: :: ternaryForm
+ | X , Y :: :: gather
+ | \ x => X :: :: defineFn (+ bind x in X +)
+ | \ x := X :: :: defineRec (+ bind x in X +)
+ | X ^* Y :: :: stepStar
+ | X +* Y :: :: plusStar
+ | X >> Y :: :: map
+ | X Y :: :: applyFn
+ | X => Y :: :: associate
+ | X % Y :: :: project
+ | ( X ) :: :: paren
+
+v :: 'v_' ::= {{ com Values. }}
+ | x :: :: var
+ | # v :: :: injectUnit {{ com inject unit value into variant type. }}
+ | # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
+ | v1 , v2 => v3 :: :: extend {{ com extend a record type. }}
+ | X :: :: preciseSymbol {{ com precise symbol. }}
+ | ~ X :: :: approxSymbol {{ com approximate symbol. }}
+
+e :: 'e_' ::= {{ com Minimal expressions. }}
+ | let x = e1 ; e2 :: :: letBind
+ | let fields = v ; e :: :: letBindRecord
+ | switch v { cases } :: :: switchVariant
+ | return v :: :: return
+ | \ x := e :: :: defineRec
+ | \ x => e :: :: defineFn
+ | e v :: :: applyFn
+ | assert v1 = v2 :: :: assertEq
+ | @ v1 := v2 :: :: put
+ | @@ v1 :: :: get
+ | { namedBranches } :: :: namedBranches
+ | e => v :: :: selectBranch
+ | desugar [[ eS ]] :: :: sugar {{ com implicitly placed by full-syntax parser. }}
+
+eS :: 'eS_' ::= {{ com Sugar expression forms. }}
+ | let fields = e1 ; e2 :: :: letBind
+ | \ fields => e :: :: defineFn
+ | \ switch { cases } :: :: casesFn
+
+namedBranches :: 'namedBranches_' ::=
+ | :: :: empty
+ | v => e , namedBranches :: :: branch
+
+pat :: 'pat_' ::= {{ com Pattern-match expression. }}
+ | _ :: :: ignoreMatch
+ | x :: :: bindMatch
+ | { fields } :: :: fieldsMatch {{ com Record elim form. }}
+
+fields :: 'fields_' ::= {{ com Product-type fields. }}
+ | v => pat , fields :: :: field
+ | x :: :: bindRest
+
+cases :: 'cases_' ::= {{ com Variant-type cases. }}
+ | # v ( pat ) => e ; cases :: :: case
+ | otherwise e :: :: otherwise
+
+
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
  | ! :: :: bang
@@ -48,38 +162,6 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | 'A' :: :: A
  | 'Z' :: :: Z
 
-S :: 'syms_ ::= {{ com Symbol sequence. }}
- | :: :: empty
- | s S :: :: oneMore
- | ( S ) :: :: balParen
- | [ S ] :: :: balBrack
- | { S } :: :: balBrace
-
-X, Y, Z :: 'term_' ::= {{ com Name terms. }}
- | as sort have X :: :: annotate
- | $ S :: :: symbols
- | $( S ) :: :: symbolsDelim
- | !$ X :: :: flatten
- | X * Y :: :: binaryForm
- | X * [ Y ] Z :: :: ternaryForm
- | X , Y :: :: gather
- | \ x => X :: :: defineFn (+ bind x in X +)
- | \ x := X :: :: defineRec (+ bind x in X +)
- | X ^* Y :: :: stepStar
- | X +* Y :: :: plusStar
- | X >> Y :: :: map
- | X Y :: :: applyFn
- | X => Y :: :: associate
- | X % Y :: :: project
- | ( X ) :: :: paren
-
-sort {{ tex \gamma }} :: 'sort_' ::= {{ com Sorts. }}
- | #syms :: :: syms
- | #set ( sort ) :: :: set
- | #ord ( sort ) :: :: ord
- | #map ( sort1 , sort2 ) :: :: map
- | sort1 -> sort2 :: :: arrow
- | ( sort ) :: :: paren
 
 kind {{ tex \nonterm K }} :: kind_ ::= {{ com Kinds. }}
  | #type :: :: type
