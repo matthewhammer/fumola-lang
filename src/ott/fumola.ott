@@ -16,13 +16,13 @@ terminals :: 'terminals_' ::=
 | @ :: :: at {{ tex \texttt{@} }}
 | >> :: :: mapOp {{ tex \texttt{>>} }}
 | % :: :: projectOp {{ tex \texttt{\%} }}
-| #syms :: :: syms {{ tex \texttt{syms} }}
+| #symtree :: :: st {{ tex \texttt{symtree} }}
 | #map :: :: map {{ tex \texttt{map} }}
 | #set :: :: set {{ tex \texttt{set} }}
 | #ord :: :: ord {{ tex \texttt{ord} }}
 | #    :: :: hash {{ tex \texttt{\#} }}
 | #empty :: :: empty {{ tex \cdot }}
-| ~ :: :: tilde {{ tex \sim }}
+| ~ :: :: tilde {{ tex \texttt{$\sim$} }}
 | |- :: :: vdash {{ tex \vdash }}
 | ;; :: :: dsemi {{ tex ; }}
 | ~> :: :: leadsto {{ tex \leadsto }}
@@ -64,13 +64,12 @@ namedComps :: 'namedComps_' ::=
 
 E :: 'E_' ::= {{ com Computation effects. }}
  | X { E } :: :: nest
- | past X :: :: past
  | E1 ; E2 :: :: sequence
  | X := A :: :: put
  | @ X = A :: :: get
  | return A :: :: return
 
-S :: 'syms_ ::= {{ com Symbol sequences. }}
+S :: 'st_ ::= {{ com Symbol tree. }}
  | :: :: empty
  | s S :: :: oneMore
  | ( S ) :: :: balParen
@@ -78,18 +77,19 @@ S :: 'syms_ ::= {{ com Symbol sequences. }}
  | { S } :: :: balBrace
 
 sort {{ tex \gamma }} :: 'sort_' ::= {{ com Name sorts. }}
- | #syms :: :: syms
+ | #symtree :: :: st
  | #set ( sort ) :: :: set
  | #ord ( sort ) :: :: ord
  | #map ( sort1 , sort2 ) :: :: map
  | sort1 -> sort2 :: :: arrow
  | ( sort ) :: :: paren
 
-X, Y, Z :: 'term_' ::= {{ com Symbolic-name terms. }}
+X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
  | as sort have X :: :: annotate
- | $ S :: :: symbols
+ | $ S :: :: symbolTree
  | $( S ) :: :: symbolsDelim
  | !$ X :: :: flatten
+ | ~ X :: :: memOf
  | X * Y :: :: binaryForm
  | X * [ Y ] Z :: :: ternaryForm
  | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }}
@@ -109,8 +109,7 @@ v :: 'v_' ::= {{ com Values. }}
  | # v :: :: injectUnit {{ com inject unit value into variant type. }}
  | # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
  | v1 , v2 => v3 :: :: extend {{ com extend a record type. }}
- | X :: :: preciseSymbol {{ com precise symbol. }}
- | ~ X :: :: approxSymbol {{ com approximate symbol. }}
+ | X :: :: symbolTerm {{ com Symbol term. }}
 
 e :: 'e_' ::= {{ com Minimal expressions. }}
  | X { e } :: :: nest
@@ -219,8 +218,8 @@ defn #sortIsFlat sort :: :: sortIsFlat :: 'flat_'
 by
 
 
------------------- :: syms
-#sortIsFlat #syms
+------------------ :: symTree
+#sortIsFlat #symtree
 
 #sortIsFlat sort
 ----------------------- :: set
@@ -234,15 +233,17 @@ by
 
 
 defn
-G |- X : sort ::  :: sort :: 'sort_' by
+G |- X : sort ::  :: hasSort :: 'sort_'
+{{ com Symbol-tree term has sort. }}
+by
 
 ----------------- :: symbols
-G |- $ S : #syms
+G |- $ S : #symtree
 
 G |- X : sort
 #sortIsFlat sort
 ----------------- :: flatten
-G |- !$ X : #syms
+G |- !$ X : #symtree
 
 G |- X : sort2
 G |- sort1 = sort2 : kind
@@ -250,28 +251,28 @@ G |- sort1 = sort2 : kind
 G |- as sort1 have X : sort1
 
 
-G |- X : #syms
+G |- X : #symtree
 G |- Y : sort
 #sortIsFlat sort
--------------------------------- :: symsL
+-------------------------------- :: stL
 G |- X * Y : sort
 
 G |- X : sort
-G |- Y : #syms
+G |- Y : #symtree
 #sortIsFlat sort
--------------------------------- :: symsR
+-------------------------------- :: stR
 G |- X * Y : sort
 
-G |- X : #syms
-G |- Y : #syms
+G |- X : #symtree
+G |- Y : #symtree
 G |- Z : sort
 #sortIsFlat sort
 ------------------------ :: ternL
 G |- X *[ Y ] Z : sort
 
 G |- X : sort
-G |- Y : #syms
-G |- Z : #syms
+G |- Y : #symtree
+G |- Z : #symtree
 #sortIsFlat sort
 ------------------------ :: ternR
 G |- X *[ Y ] Z : sort
@@ -324,6 +325,10 @@ G |- X % Y : #set(sort2)
 
 
 G |- X : #set(sort)
+-------------------- :: memOf
+G |- ~ X : sort
+
+G |- X : #set(sort)
 G |- Y : sort -> #set(sort)
 ---------------------------- :: stepStar
 G |- X ^* Y : #set(sort)
@@ -334,10 +339,10 @@ G |- Y : sort -> #set(sort)
 G |- X +* Y : #set(sort)
 
 
-G |- X : #syms
-G |- Y : #syms -> #syms
----------------------------- :: mapSyms
-G |- X >> Y : #syms
+G |- X : #symtree
+G |- Y : #symtree -> #symtree
+---------------------------- :: mapSt
+G |- X >> Y : #symtree
 
 G |- X : #set(sort)
 G |- Y : sort -> #set(sort)
@@ -357,7 +362,9 @@ G |- X >> Y : #map(sort1', sort2')
 
 
 defn
-G ~> X ; Y ::  :: contextNameFns :: 'nfns_' by
+G ~> X ; Y ::  :: contextHasSmbolTreeFns :: 'stfs_'
+{{ com Context has symbol-tree functions for current and just-past nest names. }}
+by
 
 
 ---------------------------- :: emp
@@ -384,10 +391,12 @@ G ~> X1 ; Y
 G, within X2 ~> \x => (X1 (X2 * x)) ; \y => y
 
 defn
-G1 |- E ~> G2 ::  :: effContext :: effContext_' by
+G1 |- E ~> G2 ::  :: effContext :: effContext_
+{{ com Witness effects of past (top-level) nests as context frames. }}
+by
 
 ---------------------------- :: past
-G1 |- past X ~> G, past X
+G |- X { E } ~> G, past X
 
 G1 |- E1 ~> G2
 G2 |- E2 ~> G3
@@ -395,13 +404,13 @@ G2 |- E2 ~> G3
 G1 |- E1 ; E2 ~> G3
 
 ------------------ :: get
-G1 |- @ X = A ~> G
+G |- @ X = A ~> G
 
 ------------------ :: put
-G1 |- X := A ~> G
+G |- X := A ~> G
 
 ------------------ :: return
-G1 |- return A ~> G
+G |- return A ~> G
 
 
 defn
@@ -429,10 +438,10 @@ G, x : {C} |- e : C
 --------------------- :: fix
 G |- \x := e : C
 
-G1 |- v : A
-G1 |- e : E ; A -> C
+G |- v : A
+G |- e : E ; A -> C
 ------------------------- :: app
-G1 |- e v : E ; C
+G |- e v : E ; C
 
 G, within X |- e : C
 ------------------------ :: nest
@@ -467,17 +476,17 @@ G |- t2 : E2
 G |- t1 ; t2 : E1 ; E2
 
 G |- v : A
-G |- X : #syms
+G |- X : #symtree
 ------------------------ :: put
 G |- X := v : X := A
 
 G |- v : A
-G |- X : #syms
+G |- X : #symtree
 ------------------------ :: get
 G |- @ X = v : @ X = A
 
 G |- t : E
-G |- X : #syms
+G |- X : #symtree
 ------------------------ :: nest
 G |- X { t } : X { E }
 
