@@ -1,6 +1,10 @@
 \documentclass[11pt]{article}
 \begin{document}
 
+\section*{Fumola core calc examples}
+
+Minimal syntax description, in terms of core calculus in Ott.
+
 \paragraph{Meta variable for program variables}
 
 \[ [[ x ]]\]
@@ -15,9 +19,52 @@
 
 \[ [[ a z z a ]]\]
 
+\paragraph{Symbolic-name terms}
+
+\[ [[ $ a ]]\]
+
+\[ [[ $ a z z a ]]\]
+
+\paragraph{Binary combinations of terms}
+
+\[ [[ $ a * $ z a ]]\]
+
+\[ [[ $ a * ($ z a * $ z a) ]]\]
+
+\[ [[ ($ a * $ z a ) * $ z a ]]\]
+
+\[ [[ $ a * $ z a * $ z a ]] \]
+
+
+$\lambda$ terms and their applications, as higher-order (symbolic-name) terms:
+
+\[ [[ (\x => $z * x) $ a ]]\]
+
+Notice that the $\lambda$-bound variable $x$ occurs as the right argument to the binary operator ($\cdot$).
+
+This function is applied to the term
+ \[ [[ $a ]] \]
+
+and thus, the whole term normalizes as
+ \[ [[ $z * $a ]] \]
+
 \paragraph{Symbol sequences as injected values}
 
 \[ [[ # $ a z z a ]]\]
+
+\paragraph{Put values into ambient state.}
+
+Store value [[ #$a ]] into address named [[ $a ]], and return that name as an adddress:
+
+\[ [[ let x = $a := #$a ; return x]] \]
+
+Store value [[ #$ z a z a ]] into address named [[ $z ]], and return that name as an adddress:
+
+\[ [[ let x = $z := # $ z a z a ; return x]] \]
+
+\paragraph{Get values from ambient state.}
+
+\[ [[ @x ]] \]
 
 \paragraph{Named nested expressions}
 

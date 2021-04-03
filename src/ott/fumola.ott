@@ -7,7 +7,8 @@ terminals :: 'terminals_' ::=
 | \ :: :: lambda {{ tex \lambda }}
 | -> :: :: rightarrow {{ tex \rightarrow }}
 | => :: :: thickrightarrow {{ tex \Rightarrow }}
-| := :: :: defineOrAssign {{ tex \texttt{:=} }}
+| := :: :: defineOrAssign {{ tex \mathrel{\texttt:\texttt=} }}
+| * :: :: cdot {{ tex {\cdot} }}
 | ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
 | +* :: :: plusStar {{ tex \texttt{+*} }}
 | & :: :: amp {{ tex \texttt{\&} }}
@@ -15,6 +16,7 @@ terminals :: 'terminals_' ::=
 | @ :: :: at {{ tex \texttt{@} }}
 | >> :: :: mapOp {{ tex \texttt{>>} }}
 | % :: :: projectOp {{ tex \texttt{\%} }}
+| #syms :: :: syms {{ tex \texttt{syms} }}
 | #map :: :: map {{ tex \texttt{map} }}
 | #set :: :: set {{ tex \texttt{set} }}
 | #ord :: :: ord {{ tex \texttt{ord} }}
@@ -22,7 +24,9 @@ terminals :: 'terminals_' ::=
 | #empty :: :: empty {{ tex \cdot }}
 | ~ :: :: tilde {{ tex \sim }}
 | |- :: :: vdash {{ tex \vdash }}
-| ~> :: :: becomes {{ tex \leadsto }}
+| ;; :: :: dsemi {{ tex ; }}
+| ~> :: :: leadsto {{ tex \leadsto }}
+| --> :: :: lra {{ tex \longrightarrow }}
 
 G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
  | #empty       :: :: empty {{ tex \cdot }}
@@ -88,7 +92,7 @@ X, Y, Z :: 'term_' ::= {{ com Symbolic-name terms. }}
  | !$ X :: :: flatten
  | X * Y :: :: binaryForm
  | X * [ Y ] Z :: :: ternaryForm
- | X , Y :: :: gather
+ | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }}
  | \ x => X :: :: defineFn (+ bind x in X +)
  | \ x := X :: :: defineRec (+ bind x in X +)
  | X ^* Y :: :: stepStar
@@ -210,7 +214,10 @@ defn
 G |- sort1 = sort2 : kind ::  :: sortEqual :: 'sort_' by
 
 
-defn #sortIsFlat sort :: :: sortIsFlat :: 'flat_' by
+defn #sortIsFlat sort :: :: sortIsFlat :: 'flat_'
+{{ tex \texttt{sortIsFlat}~[[sort]] }}
+by
+
 
 ------------------ :: syms
 #sortIsFlat #syms
@@ -447,7 +454,6 @@ G |- @ v : @ X = A ; A
 % { namedBranches } :: :: namedBranches
 %  e => v :: :: selectBranch
 
-
 defn
 G |- t : E  :: :: traceHasEff :: 'tr_' by
 
@@ -474,3 +480,6 @@ G |- t : E
 G |- X : #syms
 ------------------------ :: nest
 G |- X { t } : X { E }
+
+defn
+t1 ;; e1 --> t2  ;; e2 :: :: compStep :: 'tr_' by
