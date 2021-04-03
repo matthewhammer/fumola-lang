@@ -1,4 +1,4 @@
-metavar x ::=  
+metavar x , y , z ::=
 {{ coq nat}} {{ coq-equality }}
 
 grammar
@@ -19,12 +19,12 @@ G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
  | G , x : kind :: :: hasKind
  | G , x : sort :: :: hasSort
  | G , x : A    :: :: hasType
+ | G , past X   :: :: past {{ com past [[X]] }}
+ | G , within X   :: :: within {{ com within [[X]] }}
 
 A :: 'A_' ::= {{ com Value types. }}
- | X :: :: preciseSymbol
- | ~ X :: :: approxSymbol
- | & X :: :: preciseAddress
- | ~ & X :: :: approxAddress
+ | $ X :: :: symbol
+ | & X A :: :: address
  | { C } :: :: computationType
  | { variantCases } :: :: variantType
  | { recordFields } :: :: productType
@@ -49,9 +49,10 @@ namedComps :: 'namedComps_' ::=
 
 E :: 'E_' ::= {{ com Computation effects. }}
  | #empty :: :: empty
+ | past X :: :: past
  | E1 ; E2 :: :: sequence
  | X := A :: :: put
- | @ X :: :: get
+ | @ X = A :: :: get
 
 S :: 'syms_ ::= {{ com Symbol sequences. }}
  | :: :: empty
@@ -85,6 +86,7 @@ X, Y, Z :: 'term_' ::= {{ com Symbolic-name terms. }}
  | X => Y :: :: associate
  | X % Y :: :: project
  | ( X ) :: :: paren
+ | x :: :: var
 
 v :: 'v_' ::= {{ com Values. }}
  | x :: :: var
@@ -95,6 +97,7 @@ v :: 'v_' ::= {{ com Values. }}
  | ~ X :: :: approxSymbol {{ com approximate symbol. }}
 
 e :: 'e_' ::= {{ com Minimal expressions. }}
+ | X { e } :: :: nest
  | let x = e1 ; e2 :: :: letBind
  | let fields = v ; e :: :: letBindRecord
  | switch v { cases } :: :: switchVariant
@@ -183,13 +186,13 @@ kind {{ tex K }} :: kind_ ::= {{ com Kinds. }}
 substitutions
 single X x :: tsubst
 
-defns J :: '' ::= 
+defns J :: '' ::=
 
 defn
 G |- sort1 = sort2 : kind ::  :: sortEqual :: 'sort_' by
 
-defn
-#sortIsFlat sort ::  :: sortIsFlat :: 'sortIsFlat_' by
+
+defn #sortIsFlat sort :: :: sortIsFlat :: 'flat_' by
 
 ------------------ :: syms
 #sortIsFlat #syms
@@ -202,6 +205,8 @@ defn
 #sortIsFlat sort2
 ------------------------------ :: map
 #sortIsFlat #map(sort1, sort2)
+
+
 
 defn
 G |- X : sort ::  :: sort :: 'sort_' by
@@ -324,3 +329,85 @@ G |- Y : sort1 -> (sort2 -> #map(sort1', sort2'))
 ------------------------------------------------- :: mapMap
 G |- X >> Y : #map(sort1', sort2')
 
+
+
+defn
+G ~> X ; Y ::  :: contextNameFns :: 'nfns_' by
+
+
+---------------------------- :: emp
+#empty ~> \x => x ; \y => y
+
+G ~> X ; Y
+--------------------- :: varKind
+G, x : kind ~> X ; Y
+
+G ~> X ; Y
+----------------------- :: varSort
+G, x : sort ~> X ; Y
+
+G ~> X ; Y
+----------------- :: varType
+G, x : A ~> X ; Y
+
+G ~> X ; Y
+-------------------------------- :: past
+G, past Y ~> X ; \y => (Y * y)
+
+G ~> X1 ; Y
+---------------------------------------------- :: within
+G, within X2 ~> \x => (X1 (X2 * x)) ; \y => y
+
+defn
+G1 |- E ~> G2 ::  :: effContext :: effContext_' by
+
+---------------------------- :: past
+G1 |- past X ~> G, past X
+
+G1 |- E1 ~> G2
+G2 |- E2 ~> G3
+------------------ :: seq
+G1 |- E1 ; E2 ~> G3
+
+------------------ :: get
+G1 |- @ X = A ~> G
+
+------------------ :: put
+G1 |- X := A ~> G
+
+------------------ :: emp
+G1 |- #empty ~> G
+
+
+defn
+G |- e : C ::  :: compHasType :: 'cty_' by
+
+
+G, within X |- e : C
+------------------- :: nest
+G |- X { e } : C
+
+G1 |- e1 : E ; A
+G1 |- E ~> G2
+G2, x : A |- e2 : C
+--------------------------- :: let
+G1 |- let x = e1 ; e2 : C
+
+G1 |- v : A
+G1 |- e : E ; A -> C
+------------------------- :: app
+G1 |- e v : E ; C
+
+
+G |- v1 : $ Z
+G ~> X ; Y
+G |- v2 : A
+---------------------------------------- :: put
+G |- v1 := v2 : X(Y(Z)) := A ; & X(Y(Z)) A
+
+G |- v : & X A
+----------------------- :: get
+G |- @ v : @ X = A ; A
+
+defn
+G |- v : A ::  :: valHasType :: 'vty_' by
