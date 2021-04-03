@@ -9,17 +9,35 @@ Minimal syntax description, in terms of core calculus in Ott.
 
 \[ [[ x ]]\]
 
-\paragraph{Symbol sequences}
+\paragraph{Symbol trees}
+
+Atomic symbols (as examples, letters 'a' and 'z'):
 
 \[ [[ a ]]\]
 
 \[ [[ z ]]\]
 
+Atomic symbol sequencing:
+
 \[ [[ a z a ]]\]
 
-\[ [[ a z z a ]]\]
+Sequences with balanced delimiters (paren, brace, bracket):
 
-\paragraph{Symbolic-name terms}
+\[ [[ a ( z z a ) ]]\]
+
+\[ [[ a ( z { z } a ) ]]\]
+
+\[ [[ a ( ( z ) ( ) [ z a ] ) ]]\]
+
+With commas and other internal delimiters
+
+\[ [[ a ( z , ,  z  , a ) ]]\]
+
+\[ [[ a ( z ; { z } ; , a ) ]]\]
+
+\[ [[ a ( ( , - - z , ) ( ) [ z | z ( z a ) a ] ) ]]\]
+
+\paragraph{Symbol-tree terms}
 
 \[ [[ $ a ]]\]
 

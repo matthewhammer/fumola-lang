@@ -72,9 +72,9 @@ E :: 'E_' ::= {{ com Computation effects. }}
 S :: 'st_ ::= {{ com Symbol tree. }}
  | :: :: empty
  | s S :: :: oneMore
- | ( S ) :: :: balParen
- | [ S ] :: :: balBrack
- | { S } :: :: balBrace
+ | ( S1 ) S2 :: :: balParen
+ | [ S1 ] S2 :: :: balBrack
+ | { S1 } S2 :: :: balBrace
 
 sort {{ tex \gamma }} :: 'sort_' ::= {{ com Name sorts. }}
  | #symtree :: :: st
