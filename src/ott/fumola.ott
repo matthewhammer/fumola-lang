@@ -7,12 +7,22 @@ terminals :: 'terminals_' ::=
 | \ :: :: lambda {{ tex \lambda }}
 | -> :: :: rightarrow {{ tex \rightarrow }}
 | => :: :: thickrightarrow {{ tex \Rightarrow }}
+| := :: :: defineOrAssign {{ tex \texttt{:=} }}
+| ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
+| +* :: :: plusStar {{ tex \texttt{+*} }}
+| & :: :: amp {{ tex \texttt{\&} }}
+| $ :: :: dollar {{ tex \texttt{\$} }}
+| @ :: :: at {{ tex \texttt{@} }}
+| >> :: :: mapOp {{ tex \texttt{>>} }}
+| % :: :: projectOp {{ tex \texttt{\%} }}
 | #map :: :: map {{ tex \texttt{map} }}
 | #set :: :: set {{ tex \texttt{set} }}
 | #ord :: :: ord {{ tex \texttt{ord} }}
 | #    :: :: hash {{ tex \texttt{\#} }}
 | #empty :: :: empty {{ tex \cdot }}
 | ~ :: :: tilde {{ tex \sim }}
+| |- :: :: vdash {{ tex \vdash }}
+| ~> :: :: becomes {{ tex \leadsto }}
 
 G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
  | #empty       :: :: empty {{ tex \cdot }}
@@ -23,11 +33,11 @@ G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
  | G , within X   :: :: within {{ com within [[X]] }}
 
 A :: 'A_' ::= {{ com Value types. }}
- | $ X :: :: symbol
- | & X A :: :: address
- | { C } :: :: computationType
- | { variantCases } :: :: variantType
- | { recordFields } :: :: productType
+ | $ X :: :: symbol {{ com Symbol. }}
+ | & X A :: :: address {{ com Address. }}
+ | { C } :: :: suspComp {{ com Suspended computation (thunk). }}
+ | { variantCases } :: :: variantType {{ com Sum type. }}
+ | { recordFields } :: :: productType {{ com Product type. }}
 
 variantCases :: 'variantCases_' ::=
  | :: :: empty
@@ -38,6 +48,7 @@ recordFields :: 'recordFields_' ::=
  | X : A :: :: variant
 
 C :: 'C_' ::= {{ com Computation types. }}
+ | X { C } :: :: nestedComp
  | E ; C :: :: effectComp
  | A -> C :: :: argumentValue
  | A :: :: returnValue
@@ -384,8 +395,8 @@ G |- e : C ::  :: compHasType :: 'cty_' by
 
 
 G, within X |- e : C
-------------------- :: nest
-G |- X { e } : C
+------------------------ :: nest
+G |- X { e } : X { C }
 
 G1 |- e1 : E ; A
 G1 |- E ~> G2
