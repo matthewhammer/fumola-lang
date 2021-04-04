@@ -1,4 +1,11 @@
 \documentclass[11pt]{article}
+
+\newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
+\newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
+\newcommand{\ottkw}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\ottcom}[1]{{#1}}
+\newcommand{\ottsym}[1]{{#1}}
+
 \begin{document}
 
 \section*{Fumola core calc examples}
