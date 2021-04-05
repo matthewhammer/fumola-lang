@@ -1,3 +1,9 @@
+embed {{ tex-preamble
+\usepackage{charter}
+\usepackage{euler}
+\usepackage{inconsolata}
+}}
+
 metavar x , y , z ::=
 {{ coq nat}} {{ coq-equality }}
 
@@ -13,6 +19,7 @@ terminals :: 'terminals_' ::=
 | +* :: :: plusStar {{ tex \texttt{+*} }}
 | & :: :: amp {{ tex \texttt{\&} }}
 | $ :: :: dollar {{ tex \texttt{\$} }}
+| ! :: :: bang {{ tex \texttt{!} }}
 | @ :: :: at {{ tex \texttt{@} }}
 | >> :: :: mapOp {{ tex \texttt{>>} }}
 | % :: :: projectOp {{ tex \texttt{\%} }}
@@ -56,11 +63,11 @@ C :: 'C_' ::= {{ com Computation types. }}
  | E ; C :: :: effectComp
  | A -> C :: :: argumentValue
  | A :: :: returnValue
- | { namedComps } :: :: namedComps
+ | { ncts } :: :: namedComps
 
-namedComps :: 'namedComps_' ::=
+ncts :: ncts_' ::= {{ com Named computation types. }}
  | :: :: empty
- | X => C , namedComps :: :: namedComps
+ | X => C , ncts :: :: namedComps
 
 E :: 'E_' ::= {{ com Computation effects. }}
  | X { E } :: :: nest
@@ -85,22 +92,23 @@ sort {{ tex \ensuremath{\gamma} }} :: 'sort_' ::= {{ com Name sorts. }}
  | ( sort ) :: :: paren
 
 X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
- | as sort have X :: :: annotate
- | $ S :: :: symbolTree
- | $( S ) :: :: symbolsDelim
- | !$ X :: :: flatten
- | ~ X :: :: memOf
- | X * Y :: :: binaryForm {{ tex [[X]]\,\underline{\cdot}\,[[Y]] }}
- | X * [ Y ] Z :: :: ternaryForm
- | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }}
- | \ x => X :: :: defineFn (+ bind x in X +)
- | \ x := X :: :: defineRec (+ bind x in X +)
- | X ^* Y :: :: stepStar
- | X +* Y :: :: plusStar
- | X >> Y :: :: map
- | X Y :: :: applyFn
- | X => Y :: :: associate
- | X % Y :: :: project
+ | as sort have X :: :: annotate {{ com Ascribe sort $[[sort]]$ to sub-term $[[X]]$. }}
+ | $ S :: :: symbolTree {{ com Symbol tree $[[S]]$. }}
+ | $ ( S ) :: :: symbolsDelim  {{ com Symbol tree $[[S]]$, paren-delimited. }}
+ | X * Y :: :: binaryForm {{ tex [[X]]\,\underline{\cdot}\,[[Y]] }} {{ com Binary tree combo, or product of two gatherings. }}
+ | X * [ Y ] Z :: :: ternaryForm {{ tex [[X]]\,\underline{\cdot^{ [[Y ]] } }\,[[Z]] }} {{ com Ternary tree combo. }}
+ | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }} {{ com Gather subsets, or sub-mappings, or sub-orderings. }}
+ | { X } :: :: singletonSet {{ com Form gathering: Singleton set containing $[[X]]$. }}
+ | ! $ X :: :: flatten {{ com Flatten gatherings of $[[X]]$ into a single tree. }}
+ | ~ X :: :: memOf {{ com Unform gathering: Choose member of gathering $[[X]]$. }}
+ | \ x => X :: :: defineFn {{ com Symbol tree-term function space. }}
+ | \ x := X :: :: defineRec {{ com Recursive symbol tree-terms. }}
+ | X ^* Y :: :: stepStar {{ com ``Close-star'': Recursive generation of symbol tree set. }}
+ | X +* Y :: :: plusStar {{ com ``Plus-star''s: Recursive generation of symbol tree set. }}
+ | X >> Y :: :: mapGathering {{ com Transform gathering by an element-mapping function. }}
+ | X Y :: :: applyFn {{ com Apply function. }}
+ | X => Y :: :: associate {{ com com Form gathering: Associate $[[X]]$ to $[[Y]]$. }}
+ | X % Y :: :: project {{ com com Unform gathering: Projection asssociation for $[[Y]]$ from map $[[X]]$. }}
  | ( X ) :: :: paren
  | x :: :: var
 
@@ -124,12 +132,12 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | v1 := v2 :: :: put
  | @ v1 :: :: get
  | & v1 :: :: addr
- | { namedBranches } :: :: namedBranches
+ | { brs } :: :: namedBranches
  | e => v :: :: selectBranch
 
-namedBranches :: 'namedBranches_' ::=
+brs :: brs_' ::=
  | :: :: empty
- | v => e , namedBranches :: :: branch
+ | v => e , brs :: :: branch
 
 pat :: 'pat_' ::= {{ com Pattern-match expression. }}
  | _ :: :: ignoreMatch
@@ -476,7 +484,7 @@ G |- @ v : @ X = A ; A
 % let fields = v ; e :: :: letBindRecord
 % switch v { cases } :: :: switchVariant
 % assert v1 = v2 :: :: assertEq
-% { namedBranches } :: :: namedBranches
+% { brs } :: :: namedBranches
 %  e => v :: :: selectBranch
 
 defn
