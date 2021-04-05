@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+set -e
 
 ott \
     -show_sort true \
@@ -10,11 +10,11 @@ ott \
     -o fumola.tex \
     -o fumola.v
 
-pdflatex fumola.tex
-
 ott \
     -tex_wrap true \
     -i fumola.ott \
     -tex_filter examples.mng examples.tex
+
+pdflatex fumola.tex || echo Expect manual intervention here, sometimes.
 
 pdflatex examples.tex

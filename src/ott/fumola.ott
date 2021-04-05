@@ -5,10 +5,10 @@ grammar
 
 terminals :: 'terminals_' ::=
 | \ :: :: lambda {{ tex \lambda }}
-| -> :: :: rightarrow {{ tex \rightarrow }}
-| => :: :: thickrightarrow {{ tex \Rightarrow }}
+| -> :: :: rightarrow {{ tex \texttt{->} }}
+| => :: :: thickrightarrow {{ tex \texttt{=>} }}
 | := :: :: defineOrAssign {{ tex \mathrel{\texttt:\texttt=} }}
-| * :: :: cdot {{ tex {\cdot} }}
+| * :: :: cdot {{ tex \texttt{*} }}
 | ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
 | +* :: :: plusStar {{ tex \texttt{+*} }}
 | & :: :: amp {{ tex \texttt{\&} }}
@@ -90,7 +90,7 @@ X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
  | $( S ) :: :: symbolsDelim
  | !$ X :: :: flatten
  | ~ X :: :: memOf
- | X * Y :: :: binaryForm
+ | X * Y :: :: binaryForm {{ tex [[X]]\,\underline{\cdot}\,[[Y]] }}
  | X * [ Y ] Z :: :: ternaryForm
  | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }}
  | \ x => X :: :: defineFn (+ bind x in X +)
@@ -123,6 +123,7 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | assert v1 = v2 :: :: assertEq
  | v1 := v2 :: :: put
  | @ v1 :: :: get
+ | & v1 :: :: addr
  | { namedBranches } :: :: namedBranches
  | e => v :: :: selectBranch
  | desugar [[ eS ]] :: :: sugar {{ com implicitly placed by full-syntax parser. }}
@@ -156,6 +157,16 @@ t :: 'trace_' ::= {{ com Trace. }}
  | @ X = v :: :: get
  | X { t } :: :: nest
 
+stack {{ tex \kappa }} :: 'stack_' ::= {{ com Stack. }}
+ | #empty :: :: empty
+ | stack, nest X :: :: nest
+ | stack, let x => e :: :: letBody
+ | stack, arg v :: :: appArg
+ | stack, sel v :: :: selArg
+
+config {{ tex \sigma }} :: config_' ::= {{ com Configuration. }}
+ | t ;; stack ;; e :: :: stateTriple {{ com Configuration, a triple. }}
+
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
  | ! :: :: bang
@@ -184,8 +195,8 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | : :: :: colon
  | ; :: :: semi
  | < :: :: less
- | = :: :: equalsign
- | > :: :: grtr
+ | = :: :: equalsign {{ tex \texttt{=} }}
+ | > :: :: grtr {{ tex \texttt{>} }}
  | ? :: :: quest
  | @ :: :: atsign
  | \ :: :: bslash
@@ -193,10 +204,17 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | _ :: :: under
  | ` :: :: btick
  | ~ :: :: tilde
- | a :: :: a
- | z :: :: z
- | 'A' :: :: A
- | 'Z' :: :: Z
+ | a :: :: a {{ tex \texttt{a} }}
+ | b :: :: b {{ tex \texttt{b} }}
+ | c :: :: c {{ tex \texttt{c} }}
+ | z :: :: z {{ tex \texttt{z} }}
+ | y :: :: y {{ tex \texttt{y} }}
+ | x :: :: x {{ tex \texttt{x} }}
+ | xSymbol :: :: xS {{ tex \texttt{x} }}
+ | 'A' :: :: A {{ tex \texttt{A} }}
+ | 'B' :: :: B {{ tex \texttt{B} }}
+ | 'C' :: :: C {{ tex \texttt{C} }}
+ | 'Z' :: :: Z {{ tex \texttt{Z} }}
 
 
 kind {{ tex K }} :: kind_ ::= {{ com Kinds. }}
@@ -491,4 +509,11 @@ G |- X : #symtree
 G |- X { t } : X { E }
 
 defn
-t1 ;; e1 --> t2  ;; e2 :: :: compStep :: 'tr_' by
+G |- config : E
+:: :: configHasEffect :: cHasEff_
+by
+
+defn
+config1 --> config2
+:: :: configStep :: step_
+by
