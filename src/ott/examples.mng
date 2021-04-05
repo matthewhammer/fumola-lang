@@ -16,7 +16,7 @@
 
 \maketitle
 
-Minimal syntax examples in Ott$+$\LaTeX, and description in English.
+Minimal syntax examples in Ott$+$\LaTeX{}, and description in English.
 
 Notes: 
 (1) This document is a work in progress.
@@ -81,7 +81,17 @@ With commas and other internal delimiters
 \[ [[ a ( c ; { b } ; , a ) ]]\]
 \[ [[ a ( ( , - - c , ) ( ) [ b | a b ( c a ) a ] ) ]]\]
 
-\paragraph{Symbol-tree terms}
+\subsection*{Symbol-tree term sub-language}
+
+Symbol trees  address process state and to identify a process's past sub-traces, for incremental reuse.
+
+Programs describe symbols in abstract ways by using a \emph{symbol tree sub-language}, whose terms may appear in types, effects and first-class values of the process language.
+
+Unlike the process language, these terms are highly restricted, giving them (hopefully!) decideable relational properties, like equivalence and \emph{apartness}, the property of being mutually distinct, but raised to higher types.
+
+So that these properties can be mechanically checked, these terms cannot express full programs, as they cannot do anything effectful, nor express general recursion, nor general algorithms.
+
+\paragraph{Constant symbol-tree terms}
 
 We prefix symbol trees with \textbf{\$} to promote them into constant
 terms.
@@ -95,18 +105,22 @@ with domain-specific (or program-specific) meaning.
 
 Consider this term:
 
-\[ [[ (\x => $b * xSymbol) $ a ]]\]
+\[ [[ (\x => $(b*x)) $ a ]]\]
 
-And compare to this second version, with an additional parenthesis pair:
+And compare to this second version, with a different parenthesis placement:
 
 \[ [[ (\x => ($b) * x) $ a ]]\]
 
 Notice that the second version's use of parenthesis to delimit the end of symbol $[[ $b ]]$.
-If we omit them, we could mis-parse terms that use special symbols, as in the initial version,
-where we interpret \texttt{*} and \texttt{x} differently, as part of a single symbol tree.
-When we do not want to parse this aggressively, we use additional parenthesis pairs.
 
-In some cases, we may want the initial version, which always evaluates to (constant) symbol $[[$b * xSymbol]]$.
+If we move them, we could mis-parse terms that use special symbols, as in the initial version,
+where we interpret \texttt{*} and \texttt{x} differently, as part of a single symbol tree.
+
+When we do not want to parse this aggressively, we place parenthesis
+pairs around the entire symbol constant, as in the second version.
+
+In some cases, we may want the initial version,
+which always evaluates to (constant) symbol tree $[[$b * x]]$.
 
 By contrast, the second version forms a ``new symbol'' by prepending symbol $[[$b]]$ to its argument, some pre-existing symbol choice; specifically, the second function application reduces to (the single symbol tree) $[[($b)*$a]]$.
 
@@ -115,7 +129,7 @@ By contrast, the second version forms a ``new symbol'' by prepending symbol $[[$
 In Fumola,
 symbol trees are formed as binary and ternary combinations of pre-existing symbol trees, starting with basic parsing tokens, including individual special characters and (entire) identifier-char strings.
 
-Sometimes, we use the specical mathematical of $\_ \underline{\cdot} \_$ to emphasize that the resulting symbol tree is indeed a tree structure (formed from nested connections), not a string structure (formed entirely by a flattened sequence).
+While we use an infix asterisk ($\_{\texttt{*}}\_$) in concrete program syntax, in these documents we will use the specical mathematical notation $\_ \underline{\cdot} \_$.  This more stylized appearance emphasizes that the resulting symbol tree is indeed a tree structure (formed from nested connections), not a string structure (formed entirely by a flattened sequence).  Ott$+$\LaTeX{} helps us write asterisk while getting this appearance in PDF output.
 
 Each is distinct:
 
@@ -162,7 +176,7 @@ We write $[[\]]$ as ``backslash''.
 
 Programs in Fumola are each a Fumola \emph{process}, and described in terms of Fumola expressions and values that contain symbol tree terms.
 
-Symbol tree terms are not full programs, as they cannot do anything effectful, and cannot express general recursion or general algorithms.
+Recall that symbol tree terms are not full programs, as they cannot do anything effectful, and cannot express general recursion or general algorithms.
 
 Rather, symbol tree terms are used by Fumola processes to address process state and to identify a process's past sub-traces, for incremental reuse.
 
