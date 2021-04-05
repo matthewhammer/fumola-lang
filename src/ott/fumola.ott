@@ -106,8 +106,8 @@ X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
  | X +* Y :: :: plusStar {{ com ``Plus-star''s: Recursive generation of symbol tree set. }}
  | X >> Y :: :: mapGathering {{ com Transform gathering by an element-mapping function. }}
  | X Y :: :: applyFn {{ com Apply function. }}
- | X => Y :: :: associate {{ com com Form gathering: Associate $[[X]]$ to $[[Y]]$. }}
- | X % Y :: :: project {{ com com Unform gathering: Projection asssociation for $[[Y]]$ from map $[[X]]$. }}
+ | X => Y :: :: associate {{ com Form gathering: Associate $[[X]]$ to $[[Y]]$. }}
+ | X % Y :: :: project {{ com Unform gathering: Projection asssociation for $[[Y]]$ from map $[[X]]$. }}
  | ( X ) :: :: paren
  | x :: :: var
 
