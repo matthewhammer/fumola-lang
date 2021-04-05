@@ -1,0 +1,13 @@
+
+
+defn
+e1 --> e2
+:: :: expStep :: eStep_
+{{ com Locally, expression $[[e1]]$ steps to $[[e2]]$. }}
+by
+
+defn
+G |- process : C
+:: :: procEff :: pHasType_
+{{ com Under $[[G]]$, process $[[process]]$ has computation type $[[C]]$. }}
+by

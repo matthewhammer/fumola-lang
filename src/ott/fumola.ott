@@ -31,7 +31,7 @@ terminals :: 'terminals_' ::=
 | #empty :: :: empty {{ tex \cdot }}
 | ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
 | |- :: :: vdash {{ tex \vdash }}
-| ;; :: :: dsemi {{ tex ; }}
+| ;; :: :: dsemi {{ tex {~|~} }}
 | ~> :: :: leadsto {{ tex \leadsto }}
 | --> :: :: lra {{ tex \longrightarrow }}
 
@@ -133,6 +133,7 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | & v1 :: :: addr
  | { brs } :: :: namedBranches
  | e => v :: :: selectBranch
+ | [ v / x ] e :: M :: subst
 
 brs :: brs_' ::=
  | :: :: empty
@@ -153,6 +154,7 @@ cases :: 'cases_' ::= {{ com Variant-type cases. }}
  | otherwise e :: :: otherwise
 
 t :: 'trace_' ::= {{ com Trace. }}
+ | #empty :: :: empty {{ com Identity element for trace-sequencing (\texttt{;}), otherwise undefined. }}
  | return v :: :: value {{ com Return value $[[v]]$. }}
  | t1 ; t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
  | X := v :: :: put {{ com Put into $[[X]]$ value $[[v]]$. }}
@@ -165,14 +167,19 @@ stackFrame {{ tex \ensuremath{f} }} :: 'stackFrame_' ::= {{ com Stack frame. }}
  | X { _ } :: :: nest {{ com Named-nest continuation. }}
 
 stack {{ tex \ensuremath{\kappa} }} :: 'stack_' ::= {{ com Stack. }}
- | halt :: :: halt {{ tex \texttt{halt} }} {{ com Halt. }}
+ | halt t :: :: halt {{ tex \texttt{halt}([[t]]) }} {{ com Halt process with trace $[[t]]$. }}
  | stack , [ stackFrame ;; t ] :: :: frame
   {{ com Sub-stack $[[stack]]$ with local continuation $[[stackFrame]]$ and trace $[[t]]$. }}
+ | stack ; t :: S :: appendTrace
 
 process {{ tex \ensuremath{p} }} :: process_' ::= {{ com Process. }}
- | < stack ;; e > :: :: process
-   {{ tex \left< [[stack]]; [[e]] \right> }}
-   {{ com Process as a stack-expression pair. }}
+ | < stack ;; e > :: :: running
+   {{ tex \left< [[stack]] [[;;]] [[e]] \right> }}
+   {{ com Process running, as a stack-expression pair. }}
+
+ | < stack ;; retval v > :: :: returning
+   {{ tex \left< [[stack]] [[;;]] [[retval]]~[[v]] \right> }}
+   {{ com Process returning, as a stack-return-value pair. }}
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
  | ! :: :: bang
@@ -512,19 +519,33 @@ G |- X { t } : X { E }
 
 
 defn
-e1 --> e2
-:: :: expStep :: eStep_
-{{ com Without effect, expression $[[e1]]$ steps to $[[e2]]$. }}
-by
-
-defn
 process1 --> process2
 :: :: procStep :: pStep_
 {{ com Process $[[process1]]$ steps to $[[process2]]$. }}
 by
 
-defn
-G |- process : C
-:: :: procEff :: pHasType_
-{{ com Under $[[G]]$, process $[[process]]$ has computation type $[[C]]$. }}
-by
+e1 --> e2
+-------------------------------------------------------------------- :: local
+<stack;; e1> --> <stack;; e2>
+
+-------------------------------------------------------------------- :: letEnter
+<stack;; let x = e1; e2> --> <stack, [let x = _; e2 ;; #empty];; e1>
+
+---------------------------------------------------- :: return
+<stack;; return v> --> <stack; return v;; retval v>
+
+--------------------------------------------------------------------- :: letReturn
+<stack, [let x = _; e2 ;; t1];; retval v> --> <stack; t1;; [v/x]e2>
+
+-------------------------------------------------- :: nestEnter
+<stack;; X{e}> --> <stack, [X{_};; #empty];; e>
+
+----------------------------------------------------------- :: nestLeave
+<stack, [X{_};; t];; retval v> --> <stack;X{t};; retval v>
+
+----------------------------------------------------------- :: applyEnter
+<stack;; e v> --> <stack, [_ v;; #empty];; e>
+
+----------------------------------------------------------- :: applyLambda
+<stack, [_ v2;; t1];; \x => e> --> <stack; t1;; [v2/x]e>
+

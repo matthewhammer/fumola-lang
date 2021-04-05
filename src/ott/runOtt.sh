@@ -2,13 +2,14 @@
 
 set -e
 
+cat fumola.ott scratch.ott > fumola-scratch.ott
+
 ott \
     -show_sort true \
     -show_defns true \
-    -i fumola.ott \
     -tex_wrap true \
+    -i fumola-scratch.ott \
     -o fumola.tex \
-    -o fumola.v
 
 ott \
     -tex_wrap true \
