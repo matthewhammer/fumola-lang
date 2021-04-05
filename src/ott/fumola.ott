@@ -143,6 +143,7 @@ pat :: 'pat_' ::= {{ com Pattern-match expression. }}
  | _ :: :: ignoreMatch
  | x :: :: bindMatch
  | { fields } :: :: fieldsMatch {{ com Record elim form. }}
+ | # v ( pat ) :: :: caseMatch {{ com Variant elim form. }}
 
 fields :: 'fields_' ::= {{ com Product-type fields. }}
  | v => pat , fields :: :: field
