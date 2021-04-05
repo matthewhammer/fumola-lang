@@ -22,19 +22,19 @@ terminals :: 'terminals_' ::=
 | #ord :: :: ord {{ tex \texttt{ord} }}
 | #    :: :: hash {{ tex \texttt{\#} }}
 | #empty :: :: empty {{ tex \cdot }}
-| ~ :: :: tilde {{ tex \texttt{$\sim$} }}
+| ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
 | |- :: :: vdash {{ tex \vdash }}
 | ;; :: :: dsemi {{ tex ; }}
 | ~> :: :: leadsto {{ tex \leadsto }}
 | --> :: :: lra {{ tex \longrightarrow }}
 
-G {{ tex \Gamma }} :: 'G_' ::= {{ com Contexts. }}
+G {{ tex \ensuremath{\Gamma} }} :: 'G_' ::= {{ com Contexts. }}
  | #empty       :: :: empty {{ tex \cdot }}
  | G , x : kind :: :: hasKind
  | G , x : sort :: :: hasSort
  | G , x : A    :: :: hasType
- | G , past X   :: :: past {{ com past [[X]] }}
- | G , within X   :: :: within {{ com within [[X]] }}
+ | G , past X   :: :: past {{ com past $[[X]]$ }}
+ | G , within X   :: :: within {{ com within $[[X]]$ }}
 
 A :: 'A_' ::= {{ com Value types. }}
  | $ X :: :: symbol {{ com Symbol. }}
@@ -76,7 +76,7 @@ S :: 'st_ ::= {{ com Symbol tree. }}
  | [ S1 ] S2 :: :: balBrack
  | { S1 } S2 :: :: balBrace
 
-sort {{ tex \gamma }} :: 'sort_' ::= {{ com Name sorts. }}
+sort {{ tex \ensuremath{\gamma} }} :: 'sort_' ::= {{ com Name sorts. }}
  | #symtree :: :: st
  | #set ( sort ) :: :: set
  | #ord ( sort ) :: :: ord
@@ -126,12 +126,6 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | & v1 :: :: addr
  | { namedBranches } :: :: namedBranches
  | e => v :: :: selectBranch
- | desugar [[ eS ]] :: :: sugar {{ com implicitly placed by full-syntax parser. }}
-
-eS :: 'eS_' ::= {{ com Sugar expression forms. }}
- | let fields = e1 ; e2 :: :: letBind
- | \ fields => e :: :: defineFn
- | \ switch { cases } :: :: casesFn
 
 namedBranches :: 'namedBranches_' ::=
  | :: :: empty
@@ -151,22 +145,26 @@ cases :: 'cases_' ::= {{ com Variant-type cases. }}
  | otherwise e :: :: otherwise
 
 t :: 'trace_' ::= {{ com Trace. }}
- | return v :: :: value
- | t1 ; t2 :: :: seq
- | X := v :: :: put
- | @ X = v :: :: get
- | X { t } :: :: nest
+ | return v :: :: value {{ com Return value $[[v]]$. }}
+ | t1 ; t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
+ | X := v :: :: put {{ com Put into $[[X]]$ value $[[v]]$. }}
+ | @ X = v :: :: get {{ com Get from $[[X]]$ equals value $[[v]]$. }}
+ | X { t } :: :: nest {{ com Nest named $[[X]]$ with sub-trace $[[t]]$. }}
 
-stack {{ tex \kappa }} :: 'stack_' ::= {{ com Stack. }}
- | #empty :: :: empty
- | stack, nest X :: :: nest
- | stack, let x => e :: :: letBody
- | stack, arg v :: :: appArg
- | stack, sel v :: :: selArg
+stackFrame {{ tex \ensuremath{f} }} :: 'stackFrame_' ::= {{ com Stack frame. }}
+ | let x = _ ; e :: :: let {{ com Let continuation. }}
+ | _ v :: :: app {{ com Application continuation. }}
+ | X { _ } :: :: nest {{ com Named-nest continuation. }}
 
-config {{ tex \sigma }} :: config_' ::= {{ com Configuration. }}
- | t ;; stack ;; e :: :: stateTriple {{ com Configuration, a triple. }}
+stack {{ tex \ensuremath{\kappa} }} :: 'stack_' ::= {{ com Stack. }}
+ | halt :: :: halt {{ tex \texttt{halt} }} {{ com Halt. }}
+ | stack , [ stackFrame ;; t ] :: :: frame
+  {{ com Sub-stack $[[stack]]$ with local continuation $[[stackFrame]]$ and trace $[[t]]$. }}
 
+process {{ tex \ensuremath{p} }} :: process_' ::= {{ com Process. }}
+ | < stack ;; e > :: :: process
+   {{ tex \left< [[stack]]; [[e]] \right> }}
+   {{ com Process as a stack-expression pair. }}
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
  | ! :: :: bang
@@ -217,7 +215,7 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | 'Z' :: :: Z {{ tex \texttt{Z} }}
 
 
-kind {{ tex K }} :: kind_ ::= {{ com Kinds. }}
+kind {{ tex \ensuremath{K} }} :: kind_ ::= {{ com Kinds. }}
  | #type :: :: type
  | #sort :: :: sort
  | kind1 -> kind2 :: :: arrow
@@ -232,7 +230,7 @@ G |- sort1 = sort2 : kind ::  :: sortEqual :: 'sort_' by
 
 
 defn #sortIsFlat sort :: :: sortIsFlat :: 'flat_'
-{{ tex \texttt{sortIsFlat}~[[sort]] }}
+{{ tex \texttt{sortIsFlat}~[[sort]]  }}
 by
 
 
@@ -508,12 +506,21 @@ G |- X : #symtree
 ------------------------ :: nest
 G |- X { t } : X { E }
 
+
 defn
-G |- config : E
-:: :: configHasEffect :: cHasEff_
+e1 --> e2
+:: :: expStep :: eStep_
+{{ com Without effect, expression $[[e1]]$ steps to $[[e2]]$. }}
 by
 
 defn
-config1 --> config2
-:: :: configStep :: step_
+process1 --> process2
+:: :: procStep :: pStep_
+{{ com Process $[[process1]]$ steps to $[[process2]]$. }}
+by
+
+defn
+G |- process : E
+:: :: procEff :: pHasEff_
+{{ com Under $[[G]]$, process $[[process]]$ has effect $[[E]]$. }}
 by
