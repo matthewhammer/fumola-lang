@@ -1,0 +1,181 @@
+\documentclass[11pt]{article}
+\usepackage{charter}
+\usepackage{euler}
+\usepackage{inconsolata}
+
+\newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
+\newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
+\newcommand{\ottkw}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\ottcom}[1]{{#1}}
+\newcommand{\ottsym}[1]{{#1}}
+
+\begin{document}
+
+\author{Matthew A. Hammer}
+\title{Fumola Core Calculus: Overview}
+
+\maketitle
+
+Minimal overview of Fumola, using Ott$+$\LaTeX.
+
+Notes: 
+(1) This document is a work in progress.
+(2) While in progress, there is overlap in the content of this document and other documents here.
+
+\subsection*{Motivation}
+
+Dear Reader,
+
+Please first see other Fumola documents for concrete examples.
+
+This document is about describing Fumola in conceptual terms, and giving context information, including motivation and background.
+
+\noindent
+Kind wishes,
+Matthew (2020-04-05 14:15)
+
+\subsection*{Overview}
+
+Fumola is a typical PL core calculus, with some notable exceptions.
+We explain some important ones here.
+
+\paragraph{Variable names versus symbol names.}
+
+Fumola distinguishes (ordinary) variables from what we call \emph{symbols}.  By \emph{variables}, we mean lexically-scoped names that obey mathematical expectations about substitution and $\alpha$-equivalence.  PL researchers use readily use tools to model these formally and mechanically.
+
+Understanding what Fumola means by symbol is the need for this document, and utlimately, the core calculus definition itself.  Please read on.
+
+\paragraph{Call-by-push-value (CBPV) expression and value forms.}
+
+We use call-by-push-value (CBPV), not call-by-value, as our evaluation strategy.
+
+CBPV clarifies (simplifies) the interplay of higher-order control- and data-flow in the presence of effects.
+
+\paragraph{\emph{Lossless} process \emph{traces}, not merely program \emph{stores}.}
+
+The formal model of Fumola describes a program as a collection of discrete \emph{processes}.
+
+Each Fumola process is an in-progress computation with
+symbolic effects that influence it and that it influences.
+These (\texttt{get} and \texttt{put}) effects appear to operate on a conceptual store of values,
+each identified by a \emph{symbolic address},
+determined by certain influences of the process and its environment.
+
+However, this store is not precisely how we model this process state.  Rather, each process includes a global trace of all of its put and get effects, and future effects consult and update this historical record, directly.
+
+A process's trace expands monotonically, and it ``never forgets'' the past effects of the process.
+
+When a process halts (if it does) it results in its full trace of
+symbolically-named nested traces, and their symbolically-identified
+store-address effects.
+
+This (tree) structure is isomophic to the full evaluation derivation
+of the process, but forgets all program code, recalling only values
+and symbolic names for addresses and sub-traces.
+
+This trace is primary in the Fumola language model, and eclipses the
+role of a global store, as it gives the full history for such a store
+(in the limit); in this sense, the trace is lossless, especially when
+named nests recover the (statically-knowable) expressions of the
+process's program code.
+
+\paragraph{Incremental semantics as re-modeling lossless traces as lossy traces.}
+
+To model candidate \emph{incremental} semantics, we will re-model
+traces, and compare to the lossless represesntation.
+
+Other (more practical) representations include dependency graphs, or
+would otherwise create alternative representations that do not grow
+without bound.  However, in terms of semantic foundations and meta
+theory, those representations are secondary to the (lossless) trace
+model.
+
+
+\paragraph{Meta variables for program variables}
+
+\[ [[ x ]], [[ y ]], [[ z ]]\]
+
+When using lexically-scoped variables that follow the usual principles
+of substitution and alpha conversion, we use italics (as with $x, y,
+z$, above).  Italics distinguish these meta variables from
+\emph{symbols}, that do not follow ordinary lexical scoping or
+substitution rules.
+
+\paragraph{Symbols (are not variables).}
+
+We give some example symbols, but see the Examples Document for a fuller discussion.
+Notice that we use non-italic monospace font:
+
+\[ [[ a ]]\]
+\[ [[ b ]]\]
+\[ [[ xSymbol ]]\]
+\[ [[ a b c ]]\]
+
+Sequences with balanced delimiters (paren, brace, bracket):
+
+\[ [[ ( a b c ) ]]\]
+\[ [[ a ( b { c } a ) ]]\]
+\[ [[ a ( ( b ) ( ) [ c b ] ) ]]\]
+
+With commas and other internal delimiters
+
+\[ [[ a ( b , ,  b  , a ) ]]\]
+\[ [[ a ( c ; { b } ; , a ) ]]\]
+\[ [[ a ( ( , - - c , ) ( ) [ b | a b ( c a ) a ] ) ]]\]
+
+We prefix symbol trees with \textbf{\$} to promote them into constant
+terms.
+
+See the Examples Document for more details on how to write symbols within program syntax.
+
+\paragraph{Symbols (as trees)}
+
+Fumola is distinguished from functional languages in how it models
+symbolic effects.
+
+In fumola, symbols serve several interconnected roles:
+
+\begin{itemize}
+
+\item
+Symbols are first-class values.
+
+\item
+Symbols organize and address global state, where programs do put and get operations.
+
+\item
+Symbol sets index types as type refinements,
+indicating what symbols and addresses their values contain.
+
+\item
+Collections of symbols have internal structure as familes of trees, and
+
+\item
+The collective design of symbolic structure by programmers fully determines
+incremental caching and reuse semantics for their program's behavior.
+
+\end{itemize}
+
+Unlike lexically-bound variables, symbols in Fumola use a semantics of
+program effects, and are not meant to be ``meaningless'' or
+freely alpha-converted into other symbols.
+
+Rather, symbolic choices are chosen carefully
+by the programmer to have certain properties and encode certain data
+relationships.
+
+Because these choices reflect a deliberate design with important determinative qualities for cache performance, they should be carried through the
+programming language system, to the extent this is possible, not discarded.
+
+
+To this end, Fumola's type and effect system attempts to prove each
+program's reasoning about incremental reuse, in terms of symbolic
+state names, is correct --- (to do -- more details elsewhere on the
+verification conditions of Fumola programs, and how they relate to
+incremental efficiency and correctness.)
+
+Concretely, each symbol is generally a \emph{tree}, formed from binary
+connectives, balanced delimiters and possibly other (simple) connective forms.
+
+
+\end{document}

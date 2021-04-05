@@ -78,10 +78,10 @@ E :: 'E_' ::= {{ com Computation effects. }}
 
 S :: 'st_ ::= {{ com Symbol tree. }}
  | :: :: empty
- | s S :: :: oneMore
- | ( S1 ) S2 :: :: balParen
- | [ S1 ] S2 :: :: balBrack
- | { S1 } S2 :: :: balBrace
+ | s S :: :: oneMore {{ tex [[s]]{}[[S]] }}
+ | ( S1 ) S2 :: :: balParen {{ tex \texttt{(}[[S1]]\texttt{)}[[S2]] }}
+ | [ S1 ] S2 :: :: balBrack {{ tex \texttt{[}[[S1]]\texttt{]}[[S2]] }}
+ | { S1 } S2 :: :: balBrace {{ tex \texttt{$\lbrace$}[[S1]]\texttt{$\rbrace$}[[S2]] }}
 
 sort {{ tex \ensuremath{\gamma} }} :: 'sort_' ::= {{ com Name sorts. }}
  | #symtree :: :: st
@@ -94,7 +94,6 @@ sort {{ tex \ensuremath{\gamma} }} :: 'sort_' ::= {{ com Name sorts. }}
 X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
  | as sort have X :: :: annotate {{ com Ascribe sort $[[sort]]$ to sub-term $[[X]]$. }}
  | $ S :: :: symbolTree {{ com Symbol tree $[[S]]$. }}
- | $ ( S ) :: :: symbolsDelim  {{ com Symbol tree $[[S]]$, paren-delimited. }}
  | X * Y :: :: binaryForm {{ tex [[X]]\,\underline{\cdot}\,[[Y]] }} {{ com Binary tree combo, or product of two gatherings. }}
  | X * [ Y ] Z :: :: ternaryForm {{ tex [[X]]\,\underline{\cdot^{ [[Y ]] } }\,[[Z]] }} {{ com Ternary tree combo. }}
  | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }} {{ com Gather subsets, or sub-mappings, or sub-orderings. }}
@@ -211,17 +210,13 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | _ :: :: under
  | ` :: :: btick
  | ~ :: :: tilde
- | a :: :: a {{ tex \texttt{a} }}
- | b :: :: b {{ tex \texttt{b} }}
- | c :: :: c {{ tex \texttt{c} }}
- | z :: :: z {{ tex \texttt{z} }}
- | y :: :: y {{ tex \texttt{y} }}
- | x :: :: x {{ tex \texttt{x} }}
+ | a :: :: aa {{ tex \texttt{a} }}
+ | b :: :: bb {{ tex \texttt{b} }}
+ | c :: :: cc {{ tex \texttt{c} }}
+ | z :: :: zz {{ tex \texttt{z} }}
+ | y :: :: yy {{ tex \texttt{y} }}
+ | x :: :: xx {{ tex \texttt{x} }}
  | xSymbol :: :: xS {{ tex \texttt{x} }}
- | 'A' :: :: A {{ tex \texttt{A} }}
- | 'B' :: :: B {{ tex \texttt{B} }}
- | 'C' :: :: C {{ tex \texttt{C} }}
- | 'Z' :: :: Z {{ tex \texttt{Z} }}
 
 
 kind {{ tex \ensuremath{K} }} :: kind_ ::= {{ com Kinds. }}
@@ -529,7 +524,7 @@ process1 --> process2
 by
 
 defn
-G |- process : E
-:: :: procEff :: pHasEff_
-{{ com Under $[[G]]$, process $[[process]]$ has effect $[[E]]$. }}
+G |- process : C
+:: :: procEff :: pHasType_
+{{ com Under $[[G]]$, process $[[process]]$ has computation type $[[C]]$. }}
 by
