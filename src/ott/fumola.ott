@@ -225,7 +225,7 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
  | z :: :: zz {{ tex \texttt{z} }}
  | y :: :: yy {{ tex \texttt{y} }}
  | x :: :: xx {{ tex \texttt{x} }}
- | xSymbol :: :: xS {{ tex \texttt{x} }}
+ | xSymbol :: S :: xS {{ tex \texttt{x} }}
 
 
 kind {{ tex \ensuremath{K} }} :: kind_ ::= {{ com Kinds. }}

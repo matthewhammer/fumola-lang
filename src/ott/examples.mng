@@ -253,6 +253,6 @@ also results in getting the same address, and its value
 
 \paragraph{Named nested expressions}
 
-\[ [[ $a { $b { $c { $xSymbol { return $3 } } } } ]] \]
+\[ [[ $a { $b { $c { $x { return $3 } } } } ]] \]
 
 \end{document}
