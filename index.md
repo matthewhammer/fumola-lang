@@ -56,16 +56,24 @@ accurately.
 
 ![image](https://user-images.githubusercontent.com/1183963/112759033-7716da80-8fae-11eb-917f-2cfeeebea3af.png)
 
+Fungibles are provisional: They stand in for other fungibles. Fungibles are placeholders.
+
 ### Models
 
-Program behavior modeled with data.
+Thinking of
 
-https://en.wikipedia.org/wiki/Model_organism for each system concept in a domain or system to be described, but written as Fumola computations whose behavior becomes (model) data.
+**program behavior modeled with program data.**
+
+Also thinking that we want to inspect a synthetic
+["model organism"](https://en.wikipedia.org/wiki/Model_organism)
+that embodies each system concept in a domain or system to be described.
  
 ### for Language Arts
 
-- https://en.wikipedia.org/wiki/Language_arts
+Thinking of
 
-- https://en.wikipedia.org/wiki/Programming_language
+- [Language_arts](https://en.wikipedia.org/wiki/Language_arts)
 
-- https://en.wikipedia.org/wiki/The_Art_of_Computer_Programming
+- [Programming_language](https://en.wikipedia.org/wiki/Programming_language)
+
+- [The_Art_of_Computer_Programming](https://en.wikipedia.org/wiki/The_Art_of_Computer_Programming)
