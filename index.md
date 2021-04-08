@@ -1,31 +1,46 @@
-# Fungible Models Language
+# Fumola: A Programming Language Project
 
 ## Technical summary
 
-Fumola programs consist of networks of processes that operate over a shared symbolic space, in shared symbolic  time.
-Their collective behavior on the shared space-time consists of four symbolic effects, each attributed to a single process in the network, as it interacts with itself, and others:
+Fumola programs consist of **networks of processes** that operate over a **shared symbolic space, in shared symbolic time**.
+
+The collective behavior of these processes on shared space-time consists of traced symbolic storage operations that permit them to communicate, to co-operate,
+and to reflect collectively on their shared history of trace-store behavior.
+
+The trace-store consists of a history of the following per-process operations:
 
 #### Put operation
-A **put** operation has the effect of addressing a stored a value, and producing that address for subsequent get operations.
 
-#### Link operation
-A **link** operation has the effect of securing the address of a stored value with a query, where the value's precise type and address may not be available, but perhaps only partially known.
+A **put** operation has the effect of storing a new value and addressing it for subsequent **link** and **get** operations.
 
 #### Get operation
+
 A **get** operation retrieves the current stored value of a symbolic address.
+
+A **get** operation uses the symbolic address produced by a **put** for the value.
+
+#### Link operation
+
+A **link** operation uses a symbolic query to locate and secure the address of a stored value for subsequent **get** operations.
+
+Each **link** operation blocks the linking process until the symbol is available.
+
+By contrast, by virtue of being type-correct **get** operations always succeed immediately, as do **put** operations.
 
 #### Split operation
 
-Finally, processes can split themselves, subdividing their process structure, and creating "forked" child processes.
-
+Finally, processes may split themselves, subdividing their process control structure along a symbolic name, and creating "forked" child processes using that new name.
 
 ### Network state as its trace history
 
 A Fumola process network traces itself.
 
-The network globally records each individual operation of each process (**put, link, get, split**).
+The network globally records each individual operation of each process (**put, link, get, split**),
+using this history as its state for defining the meaning of subsequent operations it appends by running further.
 
-To process and curate this history as its "current state".
+Incremental computing techniques compress and reuse trace history.  The structure of symbolic names guides the (Nominal Adapton-based) reuse algorithm.  (To do.)
+
+Administrative operations (TBD / To do) dispose of permanently disused history.
 
 ### Security through a type system with symbolic verification
 
