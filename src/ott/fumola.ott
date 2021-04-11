@@ -446,6 +446,20 @@ G |- return A ~> G
 defn
 G |- v : A ::  :: valHasType :: 'vty_' by
 
+% to do
+
+% x :: :: var
+% # v :: :: injectUnit {{ com inject unit value into variant type. }}
+% # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
+% ( ) :: :: emptyRecord {{ com empty record / tuple value. }}
+% v1 , v2 => v3 :: :: extend {{ com extend a record type. }}
+% X :: :: symbolTerm {{ com Symbol term. }}
+
+% $ X :: :: symbol {{ com Symbol. }}
+% & X A :: :: address {{ com Address. }}
+% { C } :: :: suspComp {{ com Suspended computation (thunk). }}
+% { variantCases } :: :: variantType {{ com Sum type. }}
+% { recordFields } :: :: productType {{ com Product type. }}
 
 defn
 G |- e : C ::  :: compHasType :: 'cty_' by
@@ -487,6 +501,9 @@ G |- v : & X A
 ----------------------- :: get
 G |- @ v : @ X = A ; A
 
+% to do
+
+% link expression, link effect
 % let fields = v ; e :: :: letBindRecord
 % switch v { cases } :: :: switchVariant
 % assert v1 = v2 :: :: assertEq
@@ -520,6 +537,7 @@ G |- X : #symtree
 ------------------------ :: nest
 G |- X { t } : X { E }
 
+% to do -- link op
 
 defn
 to do
@@ -558,6 +576,7 @@ fields ;; v ;; e --> e'
 {{ com Let-fields step. }}
 by
 
+% to do -- add rules here.
 
 defn
 e1 --> e2
@@ -610,3 +629,10 @@ e1 --> e2
 ----------------------------------------------------------- :: applyLambda
 <stack, [_ v2;; t1];; \x => e> --> <stack; t1;; [v2/x]e>
 
+
+defn
+|- t ; process : E
+:: :: processHasEff :: pEff_ 
+by
+
+% to do -- add process-effect rules.
