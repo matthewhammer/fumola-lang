@@ -208,22 +208,51 @@ Or even simply
 
 But the CBPV form programmer must write the \texttt{let} form explicitly, and may not write these shorter forms.  By forcing this structure on the program and its programmer(s), this verbosity in examples saves on complexity in the formal system, and is worth it.
 
+\paragraph{Symbol trees as record field names}
 
-\paragraph{Symbol trees as injected values}
+to do
+
+\paragraph{Symbol trees as variant names}
 
 Prefix a symbol tree with hash character (\texttt{\#}) to create a variant constructor name.
 
-Each distinct symbol tree is a distinct variant constructor (type).
+Sometimes, such a constructor name is called a ``tag`` for the variant type.  In Fumola, each such tag is a symbol tree.
+
+When we consider entire types, each distinct symbol tree is a distinct variant constructor (type), and we use the equality reasoning for symbol trees to reason about equality of the variant types that they identify.
+
+These are each distinct injected values (of the same unit value), because the symbol trees that identify the injection are each distinct:
 
 \[ [[ # $ a b b a ]]\]
 \[ [[ # ($ a b ) * ($ b a) ]]\]
 \[ [[ # ($ a ) * ($ b ) * ($ b a) ]]\]
 
-Symbol trees in fumola are first-class values, and these constructor names can be parameterized using these values.
-
-This function creates a constructor value using its parameter, a symbol tree, and returns this value:
+Symbol trees in fumola are first-class values, and these constructor names can be parameterized using these values.  For example, this function creates a variant value using its parameter, a symbol tree, and returns this value:
 
 \[ [[ \x => return # x ]] \]
+
+The type of this function is parametric in the input symbol tree~$x$, and uses this quantified parameter to identify the output type:
+
+\[ [[ forall x : symtree => $x -> #x ]] \]
+
+We can get the distinct injected values above by applying this function repeatedly:
+
+\[ [[ let f = [as forall x : symtree => $x -> #x 
+               have \x => return # x ] ]] \]
+\[ [[ f $ a b b a ]]\]
+\[ [[ f $ a b ) * ($ b a) ]]\]
+\[ [[ f ($ a ) * ($ b ) * ($ b a) ]]\]
+
+\paragraph{Meta programming in Fumola}
+
+to do
+
+In larger examples, we will (to do) write functions that generate variant and product types, recursively, from general data structures of symbol trees, such as lists or maps.
+
+These larger examples will (to do) demonstrate that Fumola permits abstraction patterns that go beyond traditional variations of the typed lambda calculus, and begin to resemble other meta programming patterns from settings with fewer type guarantees, e.g., SmallTalk family, or the Lisp/Scheme families of languages.
+
+Those well-established families of languages are designed for live programming, and domain-specific customization.  They tend to present language structure as library modules, rather than primitive language features.  They excel at creating customized, live developer experiences. They freely permit logic that reflects on its own representation as code, especially regarding developer-chosen symbol names and component organization.
+
+Just as in those well-established settings, we anticipate the meta programming patterns found that that we import into Fumola will be useful for authoring tools for authoring tools, such as domain-specific live programming environments.
 
 \paragraph{Put values into ambient state.}
 
@@ -254,5 +283,35 @@ also results in getting the same address, and its value
 \paragraph{Named nested expressions}
 
 \[ [[ $a { $b { $c { $x { return $3 } } } } ]] \]
+
+\section*{Data structures}
+
+\subsection*{Lists and stacks}
+
+to do
+
+\subsection*{General sequences}
+
+to do
+
+\subsection*{General maps}
+
+to do
+
+\section*{Algorithms}
+
+\subsection*{Linear transformations}
+
+to do
+
+\subsection*{Divide and conquer}
+
+to do
+
+\subsection*{General fixed points}
+
+Consider abstract interpretation-type algorithms.
+
+to do
 
 \end{document}
