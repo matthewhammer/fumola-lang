@@ -10,6 +10,7 @@ metavar x , y , z ::=
 grammar
 
 terminals :: 'terminals_' ::=
+| forall :: :: forall {{ tex \forall }}
 | \ :: :: lambda {{ tex \lambda }}
 | -> :: :: rightarrow {{ tex \texttt{->} }}
 | => :: :: thickrightarrow {{ tex \texttt{=>} }}
@@ -52,13 +53,16 @@ A :: 'A_' ::= {{ com Value types. }}
 
 variantCases :: 'variantCases_' ::=
  | :: :: empty
- | # X : A :: :: variant
+ | # X :: :: variantUnit
+ | # X : A :: :: variantType
 
 recordFields :: 'recordFields_' ::=
  | :: :: empty
  | X : A :: :: variant
 
 C :: 'C_' ::= {{ com Computation types. }}
+ | forall x : kind => C :: :: forallKind
+ | forall x : sort => C :: :: forallSort
  | X { C } :: :: nestedComp
  | E ; C :: :: effectComp
  | A -> C :: :: argumentValue
@@ -115,6 +119,7 @@ X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
 
 v :: 'v_' ::= {{ com Values. }}
  | x :: :: var
+ | [ e ] :: :: thunk
  | # v :: :: injectUnit {{ com inject unit value into variant type. }}
  | # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
  | ( ) :: :: emptyRecord {{ com empty record / tuple value. }}
@@ -122,6 +127,7 @@ v :: 'v_' ::= {{ com Values. }}
  | X :: :: symbolTerm {{ com Symbol term. }}
 
 e :: 'e_' ::= {{ com Minimal expressions. }}
+ | as C have e :: :: annot
  | X { e } :: :: nest
  | let x = e1 ; e2 :: :: letBind
  | let fields = v ; e :: :: letBindRecord
@@ -130,6 +136,7 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | \ x := e :: :: defineRec
  | \ x => e :: :: defineFn
  | e v :: :: applyFn
+ | e ( v ) :: S :: applyFnParen
  | assert v1 = v2 :: :: assertEq
  | v1 := v2 :: :: put
  | @ v1 :: :: get
@@ -137,6 +144,9 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | { brs } :: :: namedBranches
  | e => v :: :: selectBranch
  | [ v / x ] e :: M :: subst
+
+ | let x = v ; :: S :: letBindValNoBody
+ | let x = v ; e :: S :: letBindVal
 
 brs :: brs_' ::=
  | :: :: empty
@@ -175,7 +185,7 @@ stack {{ tex \ensuremath{\kappa} }} :: 'stack_' ::= {{ com Stack. }}
   {{ com Sub-stack $[[stack]]$ with local continuation $[[stackFrame]]$ and trace $[[t]]$. }}
  | stack ; t :: S :: appendTrace
 
-process {{ tex \ensuremath{p} }} :: process_' ::= {{ com Process. }}
+process, p :: process_ ::= {{ com Process. }}
  | < stack ;; e > :: :: running
    {{ tex \left< [[stack]] [[;;]] [[e]] \right> }}
    {{ com Process running, as a stack-expression pair. }}
@@ -183,6 +193,20 @@ process {{ tex \ensuremath{p} }} :: process_' ::= {{ com Process. }}
  | < stack ;; retval v > :: :: returning
    {{ tex \left< [[stack]] [[;;]] [[retval]]~[[v]] \right> }}
    {{ com Process returning, as a stack-return-value pair. }}
+
+netTrace, T :: netTrace_ ::= {{ com Net traces. }}
+ | exists x : sort . T :: :: existsSort
+ | X { netOp } :: :: netOp
+
+netOp :: netOp_ ::= {{ com Net operation. }}
+ | X := v : A :: :: put
+ | @ X = v : A :: :: get
+ | & X : A :: :: link
+ | halt ( t ) :: :: halt
+
+netProcs, N :: net ::= {{ com Net of processes. }}
+ | X { p } :: :: namedProcess
+ | N1 , N2 :: :: gatherProcs
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
  | ! :: :: bang
@@ -599,9 +623,9 @@ let fields = v ; e --> e'
 
 
 defn
-process1 --> process2
+p1 --> p2
 :: :: procStep :: pStep_
-{{ com Process $[[process1]]$ steps to $[[process2]]$. }}
+{{ com Process $[[p1]]$ steps to process $[[p1]]$. }}
 by
 
 e1 --> e2
@@ -631,8 +655,15 @@ e1 --> e2
 
 
 defn
-|- t ; process : E
+G |- p : E
 :: :: processHasEff :: pEff_ 
 by
 
-% to do -- add process-effect rules.
+% to do -- rules.
+
+defn
+G |- T ;; N : E
+:: :: netHasEff :: nEff_ 
+by
+
+% to do -- rules.

@@ -1,7 +1,1 @@
 
-
-defn
-G |- process : C
-:: :: procEff :: pHasType_
-{{ com Under $[[G]]$, process $[[process]]$ has computation type $[[C]]$. }}
-by

@@ -2,6 +2,7 @@
 \usepackage{charter}
 \usepackage{euler}
 \usepackage{inconsolata}
+\usepackage{xcolor}
 
 \newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
 \newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
@@ -216,7 +217,8 @@ to do
 
 Prefix a symbol tree with hash character (\texttt{\#}) to create a variant constructor name.
 
-Sometimes, such a constructor name is called a ``tag`` for the variant type.  In Fumola, each such tag is a symbol tree.
+Sometimes, such a constructor name is called a ``tag'' for the variant type.
+In Fumola, each such tag is a symbol tree.
 
 When we consider entire types, each distinct symbol tree is a distinct variant constructor (type), and we use the equality reasoning for symbol trees to reason about equality of the variant types that they identify.
 
@@ -232,27 +234,17 @@ Symbol trees in fumola are first-class values, and these constructor names can b
 
 The type of this function is parametric in the input symbol tree~$x$, and uses this quantified parameter to identify the output type:
 
-\[ [[ forall x : symtree => $x -> #x ]] \]
+\[ [[ forall x : #symtree => $x -> {#x} ]] \]
 
 We can get the distinct injected values above by applying this function repeatedly:
 
-\[ [[ let f = [as forall x : symtree => $x -> #x 
-               have \x => return # x ] ]] \]
-\[ [[ f $ a b b a ]]\]
-\[ [[ f $ a b ) * ($ b a) ]]\]
-\[ [[ f ($ a ) * ($ b ) * ($ b a) ]]\]
+\[ [[ let x = [as forall x : #symtree => $x -> {#x}
+               have \x => return # x ]; ]] \]
+\[ [[ x $ a b b a ]]\]
+\[ [[ x ( ( $ a b ) * ($ b a) )  ]]\]
+\[ [[ x ( ($ a ) * ($ b ) * ($ b a) ) ]]\]
 
-\paragraph{Meta programming in Fumola}
-
-to do
-
-In larger examples, we will (to do) write functions that generate variant and product types, recursively, from general data structures of symbol trees, such as lists or maps.
-
-These larger examples will (to do) demonstrate that Fumola permits abstraction patterns that go beyond traditional variations of the typed lambda calculus, and begin to resemble other meta programming patterns from settings with fewer type guarantees, e.g., SmallTalk family, or the Lisp/Scheme families of languages.
-
-Those well-established families of languages are designed for live programming, and domain-specific customization.  They tend to present language structure as library modules, rather than primitive language features.  They excel at creating customized, live developer experiences. They freely permit logic that reflects on its own representation as code, especially regarding developer-chosen symbol names and component organization.
-
-Just as in those well-established settings, we anticipate the meta programming patterns found that that we import into Fumola will be useful for authoring tools for authoring tools, such as domain-specific live programming environments.
+Notice that this small example begins to feel like meta programming: the distinct \emph{names} of distinct types are being passed as extra parameters; we discuss meta programming later in this document.
 
 \paragraph{Put values into ambient state.}
 
@@ -313,5 +305,16 @@ to do
 Consider abstract interpretation-type algorithms.
 
 to do
+
+
+\subsection*{Meta programming in Fumola}
+
+In larger examples, we will (to do) write functions that generate variant and product types, recursively, from general data structures of symbol trees, such as lists or maps.
+
+These larger examples will (to do) demonstrate that Fumola permits abstraction patterns that go beyond traditional variations of the typed lambda calculus, and begin to resemble other meta programming patterns from settings with fewer type guarantees, e.g., SmallTalk family, or the Lisp/Scheme families of languages.
+
+Those well-established families of languages are designed for live programming, and domain-specific customization.  They tend to present language structure as library modules, rather than primitive language features.  They excel at creating customized, live developer experiences. They freely permit logic that reflects on its own representation as code, especially regarding developer-chosen symbol names and component organization.
+
+Just as in those well-established settings, we anticipate the meta programming patterns found that that we import into Fumola will be useful for authoring tools for authoring tools, such as domain-specific live programming environments.
 
 \end{document}
