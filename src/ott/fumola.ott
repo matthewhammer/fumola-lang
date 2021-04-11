@@ -117,6 +117,7 @@ v :: 'v_' ::= {{ com Values. }}
  | x :: :: var
  | # v :: :: injectUnit {{ com inject unit value into variant type. }}
  | # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
+ | ( ) :: :: emptyRecord {{ com empty record / tuple value. }}
  | v1 , v2 => v3 :: :: extend {{ com extend a record type. }}
  | X :: :: symbolTerm {{ com Symbol term. }}
 
@@ -521,10 +522,62 @@ G |- X { t } : X { E }
 
 
 defn
+to do
+:: :: todo :: todo_
+{{ com Fake judgement, for leaving to do notes. }}
+by
+
+
+defn
+pat ;; v ;; e --> e'
+:: :: patMatch :: pm_
+by
+
+
+defn
+v1 ;; v2 ;; cases --> e
+:: :: casesStep :: cases_
+{{ com Switch-cases step. }}
+by
+
+pat ;; v ;; e --> e'
+------------------------------------------ :: match
+X ;; v ;; # X ( pat ) => e ; cases --> e'
+
+
+v1 ;; v2 ;; cases --> e'
+------------------------------------------ :: rec
+v1 ;; v2 ;; #v3 (pat) => e ; cases --> e'
+
+------------------------------ :: otherwise
+v1 ;; v2 ;; otherwise e --> e
+
+defn
+fields ;; v ;; e --> e'
+:: :: fieldsStep :: fields_
+{{ com Let-fields step. }}
+by
+
+
+defn
 e1 --> e2
 :: :: expStep :: eStep_
 {{ com Locally, expression $[[e1]]$ steps to $[[e2]]$. }}
 by
+
+v ;; ( ) ;; cases --> e
+--------------------------- :: variantCases1
+switch #v { cases } --> e
+
+v1 ;; v2 ;; cases --> e
+--------------------------- :: variantCases2
+switch #v1(v2) { cases } --> e
+
+
+fields ;; v ;; e --> e'
+-------------------------- :: recordProject
+let fields = v ; e --> e'
+
 
 defn
 process1 --> process2
