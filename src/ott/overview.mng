@@ -186,7 +186,22 @@ In our formalization and design of Fumola, however, the store-trace preserves th
 
 Effects that pass do not get lost, then, but rather, \emph{more precise}, since they have transformed from potential to actual, and their actual details are recorded in the store-trace and reflected in its effect on itself.
 
-\subsubsection*{Preservation}
+
+\subsubsection*{Progress}
+
+Conventionally, the meta theorem for progress shows that a type system classifies programs that do not get stuck, or otherwise fall into an undefined state of operation.
+
+To capture process progress in Fumola, we need to characterize proceseses that are blocked, but have not otherwise ``gone wrong.''
+
+We define $[[p idle]]$ to capture this idea.  When $[[p idle]]$ holds,
+then either $p$ is blocked waiting to link on an unusable address,
+or $p$ has completed, and consists of a halted process and its complete trace.
+
+Conceptually, $p$ being blocked isn't ``wrong'', since
+there is a way to montonically extend the process network in a live interaction with more
+processes that will interact with the unusable addresses, and permit their use by existing blocked processes.
+
+This situation abstractly models that of clients waiting for a server to be available, potentially indefinitely.  If they choose to wait indefinitely, it is not ``wrong'' in our system.
 
 \paragraph{Proposition.}
 
@@ -199,6 +214,8 @@ either $[[p idle]]$ or exists $[[ p' ]]$ such that
 
 \[ [[ p --> p' ]] \]
 
+
+\subsubsection*{Preservation}
 
 \paragraph{Proposition.}
 
@@ -213,10 +230,6 @@ and exists  $[[ E' ]]$ extending $[[ E ]]$ (each possibly more precise)
 such that
 
 \[ [[ G' |- p : E' ]] \]
-
-\subsubsection*{Progress}
-
-To capture process progress, we need to characterize proceseses that are blocked, but have not otherwise ``gone wrong.''
 
 
 \end{document}
