@@ -2,6 +2,7 @@
 \usepackage{charter}
 \usepackage{euler}
 \usepackage{inconsolata}
+\usepackage{xcolor}
 
 \newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
 \newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
@@ -18,7 +19,7 @@
 
 Minimal overview of Fumola, using Ott$+$\LaTeX.
 
-Notes: 
+Notes:
 (1) This document is a work in progress.
 (2) While in progress, there is overlap in the content of this document and other documents here.
 
@@ -170,12 +171,52 @@ programming language system, to the extent this is possible, not discarded.
 
 To this end, Fumola's type and effect system attempts to prove each
 program's reasoning about incremental reuse, in terms of symbolic
-state names, is correct --- (to do -- more details elsewhere on the
-verification conditions of Fumola programs, and how they relate to
-incremental efficiency and correctness.)
+state names, is correct.
 
 Concretely, each symbol is generally a \emph{tree}, formed from binary
 connectives, balanced delimiters and possibly other (simple) connective forms.
+
+\section*{Meta theory}
+
+We give meta theory of individual Fumola processes in terms of progress and preservation of their effects.
+
+Ordinarily, a program's effects would not be preserved as it steps, since these steps witness effects that have ``passed.''
+
+In our formalization and design of Fumola, however, the store-trace preserves these operations as a trace, so that they are, indeed, \emph{preserved}, quite literally, but as an inert trace of passed, but remembered, trace-store operations.
+
+Effects that pass do not get lost, then, but rather, \emph{more precise}, since they have transformed from potential to actual, and their actual details are recorded in the store-trace and reflected in its effect on itself.
+
+\subsubsection*{Preservation}
+
+\paragraph{Proposition.}
+
+If
+
+\[ [[ G |- p : E ]] \]
+
+Then
+either $[[p idle]]$ or exists $[[ p' ]]$ such that
+
+\[ [[ p --> p' ]] \]
+
+
+\paragraph{Proposition.}
+
+If
+
+\[ [[ G |- p : E ]] \]
+
+\[ [[ p --> p' ]] \]
+
+Then exists $[[ G' ]]$ extending $[[ G ]]$
+and exists  $[[ E' ]]$ extending $[[ E ]]$ (each possibly more precise)
+such that
+
+\[ [[ G' |- p : E' ]] \]
+
+\subsubsection*{Progress}
+
+To capture process progress, we need to characterize proceseses that are blocked, but have not otherwise ``gone wrong.''
 
 
 \end{document}

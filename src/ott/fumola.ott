@@ -60,7 +60,7 @@ recordFields :: 'recordFields_' ::=
  | :: :: empty
  | X : A :: :: variant
 
-C :: 'C_' ::= {{ com Computation types. }}
+C {{ tex \ensuremath{C} }} :: 'C_' ::= {{ com Computation types. }}
  | forall x : kind => C :: :: forallKind
  | forall x : sort => C :: :: forallSort
  | X { C } :: :: nestedComp
@@ -73,14 +73,14 @@ ncts :: ncts_' ::= {{ com Named computation types. }}
  | :: :: empty
  | X => C , ncts :: :: namedComps
 
-E :: 'E_' ::= {{ com Computation effects. }}
+E {{ tex \ensuremath{E} }} :: 'E_' ::= {{ com Computation effects. }}
  | X { E } :: :: nest
  | E1 ; E2 :: :: sequence
  | X := A :: :: put
  | @ X = A :: :: get
  | return A :: :: return
 
-S :: 'st_ ::= {{ com Symbol tree (of binary and ternary forms). }}
+S {{ tex \ensuremath{S} }} :: 'st_ ::= {{ com Symbol tree (of binary and ternary forms). }}
  | S1 * S2 :: :: binaryForm {{ tex [[S1]]\,\underline{\cdot}\,[[S2]] }} {{ com Explicit binary form. }}
  | S1 *[ S2 ] S3 :: :: ternaryform  {{ tex [[S1]]\,\underline{\cdot}^[[S2]]\,[[S3]] }} {{ com Explicit ternary form. }}
  | s S :: S :: oneMore {{ tex [[s]]{}[[S]] }} {{ com Sequencing as implicit (iterated) binary combination. }}
@@ -185,7 +185,7 @@ stack {{ tex \ensuremath{\kappa} }} :: 'stack_' ::= {{ com Stack. }}
   {{ com Sub-stack $[[stack]]$ with local continuation $[[stackFrame]]$ and trace $[[t]]$. }}
  | stack ; t :: S :: appendTrace
 
-process, p :: process_ ::= {{ com Process. }}
+process, p {{ tex \ensuremath{p} }} :: process_ ::= {{ com Process. }}
  | < stack ;; e > :: :: running
    {{ tex \left< [[stack]] [[;;]] [[e]] \right> }}
    {{ com Process running, as a stack-expression pair. }}
@@ -257,6 +257,12 @@ kind {{ tex \ensuremath{K} }} :: kind_ ::= {{ com Kinds. }}
  | #type :: :: type
  | #sort :: :: sort
  | kind1 -> kind2 :: :: arrow
+
+judgementForms :: jfs_::=
+  | G |- e : E :: :: expHasEff   {{ tex [[G]] [[|-]] [[e]] : [[E]] }}
+  | G |- p : E :: :: procHasEff  {{ tex [[G]] [[|-]] [[p]] : [[E]] }}
+  | p idle :: :: procIdle        {{ tex [[p]]~[[idle]] }}
+  | p --> p' :: :: procSteps    {{ tex [[p]] [[-->]] [[p']] }}
 
 substitutions
 single X x :: tsubst
@@ -652,6 +658,12 @@ e1 --> e2
 
 ----------------------------------------------------------- :: applyLambda
 <stack, [_ v2;; t1];; \x => e> --> <stack; t1;; [v2/x]e>
+
+
+defn
+p idle
+:: :: processIsIdle :: pIdle_
+by
 
 
 defn

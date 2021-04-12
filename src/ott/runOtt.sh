@@ -5,9 +5,12 @@ set -e
 cat fumola.ott scratch.ott > fumola-scratch.ott
 
 ott \
+    -merge true \
     -show_sort true \
     -show_defns true \
     -tex_wrap true \
+    -tex_show_meta true \
+    -tex_show_categories true \
     -i fumola-scratch.ott \
     -o fumola.tex \
 
