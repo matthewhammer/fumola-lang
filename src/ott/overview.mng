@@ -180,13 +180,6 @@ connectives, balanced delimiters and possibly other (simple) connective forms.
 
 We give meta theory of individual Fumola processes in terms of progress and preservation of their effects.
 
-Ordinarily, a program's effects would not be preserved as it steps, since these steps witness effects that have ``passed.''
-
-In our formalization and design of Fumola, however, the store-trace preserves these operations as a trace, so that they are, indeed, \emph{preserved}, quite literally, but as an inert trace of passed, but remembered, trace-store operations.
-
-Effects that pass do not get lost, then, but rather, \emph{more precise}, since they have transformed from potential to actual, and their actual details are recorded in the store-trace and reflected in its effect on itself.
-
-
 \subsubsection*{Progress}
 
 Conventionally, the meta theorem for progress shows that a type system classifies programs that do not get stuck, or otherwise fall into an undefined state of operation.
@@ -199,7 +192,7 @@ or $p$ has completed, and consists of a halted process and its complete trace.
 
 Conceptually, $p$ being blocked isn't ``wrong'', since
 there is a way to montonically extend the process network in a live interaction with more
-processes that will interact with the unusable addresses, and permit their use by existing blocked processes.
+processes that will interact with the unusable addresses, and permit their use by existing blocked processes, thereby unblocking them.
 
 This situation abstractly models that of clients waiting for a server to be available, potentially indefinitely.  If they choose to wait indefinitely, it is not ``wrong'' in our system.
 
@@ -216,6 +209,18 @@ either $[[p idle]]$ or exists $[[ p' ]]$ such that
 
 
 \subsubsection*{Preservation}
+
+Conventionally, a program's effects would not be preserved as it steps, since these steps witness effects that have ``passed.''
+
+In Fumola, however, the ambient store-trace preserves these operations as a trace, so that they are, indeed, \emph{preserved}, quite literally, but as an inert trace of passed, but remembered, effectful operations.
+
+Effects that pass do not get lost, then, but rather, \emph{more precise}, since they have transformed from potential to actual, and their actual details are recorded in the store-trace and reflected in its effect on itself.
+
+Mathematically, we capture the relationship of ``more precise'' with a family of partial orders that we will collectively call ``extension''.
+
+Informally, we say that an effect (or context) extends another if the extension is more precise, but otherwise consistent with the original version.
+
+A typical way to extend an effect is to unroll a recursive effect, and choose specific available branches that its body permits.  Indeed, this is the effect of running a loop in actuality.
 
 \paragraph{Proposition.}
 
