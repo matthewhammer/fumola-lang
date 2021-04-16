@@ -9,6 +9,11 @@ metavar x , y , z ::=
 
 grammar
 
+formula :: 'formula_' ::=
+| judgement :: :: judgement
+| x : A in G :: :: varInContext
+
+
 terminals :: 'terminals_' ::=
 | forall :: :: forall {{ tex \forall }}
 | \ :: :: lambda {{ tex \lambda }}
@@ -52,13 +57,15 @@ A :: 'A_' ::= {{ com Value types. }}
  | { recordFields } :: :: productType {{ com Product type. }}
 
 variantCases :: 'variantCases_' ::=
- | :: :: empty
- | # X :: :: variantUnit
- | # X : A :: :: variantType
+ | # X :: :: singleUnit
+ | # X : A :: :: singleVal
+ | variantCases , # X :: :: anotherUnit
+ | variantCases , # X : A :: :: anotherVal
 
 recordFields :: 'recordFields_' ::=
  | :: :: empty
- | X : A :: :: variant
+ | X : A :: :: singleVal
+ | recordFields , X : A :: :: anotherVal
 
 C {{ tex \ensuremath{C} }} :: 'C_' ::= {{ com Computation types. }}
  | forall x : kind => C :: :: forallKind
@@ -119,7 +126,7 @@ X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
 
 v :: 'v_' ::= {{ com Values. }}
  | x :: :: var
- | [ e ] :: :: thunk
+ | { e } :: :: thunk {{ tex \left\{ [[e]] \right\} }}
  | # v :: :: injectUnit {{ com inject unit value into variant type. }}
  | # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
  | ( ) :: :: emptyRecord {{ com empty record / tuple value. }}
@@ -127,7 +134,7 @@ v :: 'v_' ::= {{ com Values. }}
  | X :: :: symbolTerm {{ com Symbol term. }}
 
 e :: 'e_' ::= {{ com Minimal expressions. }}
- | as C have e :: :: annot
+ | as C have e :: :: annot {{ tex \begin{array}{rl}[[as]]& [[C]] \\[[have]]& [[e]] \end{array} }}
  | X { e } :: :: nest
  | let x = e1 ; e2 :: :: letBind
  | let fields = v ; e :: :: letBindRecord
@@ -476,20 +483,36 @@ G |- return A ~> G
 defn
 G |- v : A ::  :: valHasType :: 'vty_' by
 
-% to do
+-------------- :: unitVal
+G |- () : {}
 
-% x :: :: var
-% # v :: :: injectUnit {{ com inject unit value into variant type. }}
-% # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
-% ( ) :: :: emptyRecord {{ com empty record / tuple value. }}
-% v1 , v2 => v3 :: :: extend {{ com extend a record type. }}
-% X :: :: symbolTerm {{ com Symbol term. }}
+x : A in G
+------------ :: var
+G |- x : A
 
-% $ X :: :: symbol {{ com Symbol. }}
-% & X A :: :: address {{ com Address. }}
-% { C } :: :: suspComp {{ com Suspended computation (thunk). }}
-% { variantCases } :: :: variantType {{ com Sum type. }}
-% { recordFields } :: :: productType {{ com Product type. }}
+
+G |- X : #symtree
+------------------ :: symtree
+G |- X : $ X
+
+G |- v : $ X
+----------------------- :: injUnit
+G |- # v : { # X : {} }
+
+G |- v1 : $ X
+G |- v2 : A
+--------------------------- :: injVal
+G |- # v1 ( v2 ) : { # X : A }
+
+G |- v1 : { recordFields }
+G |- v2 : $X
+G |- v3 : A
+-------------------------------------- :: recordExt
+G |- v1 , v2 => v3 : { recordFields, X : A }
+
+G |- e : C
+--------------------- :: thunk
+G |- { e } : { C }
 
 defn
 G |- e : C ::  :: compHasType :: 'cty_' by

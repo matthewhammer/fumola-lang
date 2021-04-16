@@ -238,8 +238,8 @@ The type of this function is parametric in the input symbol tree~$x$, and uses t
 
 We can get the distinct injected values above by applying this function repeatedly:
 
-\[ [[ let x = [as forall x : #symtree => $x -> {#x}
-               have \x => return # x ]; ]] \]
+\[ [[ let x = {as forall x : #symtree => $x -> {#x}
+               have \x => return # x }; ]] \]
 \[ [[ x $ a b b a ]]\]
 \[ [[ x ( ( $ a b ) * ($ b a) )  ]]\]
 \[ [[ x ( ($ a ) * ($ b ) * ($ b a) ) ]]\]
