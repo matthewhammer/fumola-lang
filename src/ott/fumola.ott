@@ -1,0 +1,728 @@
+embed {{ tex-preamble
+\usepackage{charter}
+\usepackage{euler}
+\usepackage{inconsolata}
+\usepackage{mathabx} % for otriangleup
+}}
+
+metavar x , y , z ::=
+{{ coq nat}} {{ coq-equality }}
+
+grammar
+
+formula :: 'formula_' ::=
+| judgement :: :: judgement
+| x : A in G :: :: varInContext
+
+
+terminals :: 'terminals_' ::=
+| == :: :: equiv {{ tex \equiv }}
+| forall :: :: forall {{ tex \forall }}
+| exists :: :: exists {{ tex \exists }}
+| %% :: :: apart {{ tex \otriangleup }}
+| \ :: :: lambda {{ tex \lambda }}
+| -> :: :: rightarrow {{ tex \texttt{->} }}
+| => :: :: thickrightarrow {{ tex \texttt{=>} }}
+| := :: :: defineOrAssign {{ tex \mathrel{\texttt:\texttt=} }}
+| * :: :: cdot {{ tex \texttt{*} }}
+| ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
+| +* :: :: plusStar {{ tex \texttt{+*} }}
+| & :: :: amp {{ tex \texttt{\&} }}
+| $ :: :: dollar {{ tex \texttt{\$} }}
+| ! :: :: bang {{ tex \texttt{!} }}
+| @ :: :: at {{ tex \texttt{@} }}
+| >> :: :: mapOp {{ tex \texttt{>>} }}
+| % :: :: projectOp {{ tex \texttt{\%} }}
+| #symtree :: :: st {{ tex \texttt{symtree} }}
+| #map :: :: map {{ tex \texttt{map} }}
+| #set :: :: set {{ tex \texttt{set} }}
+| #ord :: :: ord {{ tex \texttt{ord} }}
+| #    :: :: hash {{ tex \texttt{\#} }}
+| #empty :: :: empty {{ tex \cdot }}
+| ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
+| |- :: :: vdash {{ tex \vdash }}
+| ;; :: :: dsemi {{ tex {~|~} }}
+| ~> :: :: leadsto {{ tex \leadsto }}
+| --> :: :: lra {{ tex \longrightarrow }}
+
+G {{ tex \ensuremath{\Gamma} }} :: 'G_' ::= {{ com Contexts. }}
+ | #empty       :: :: empty {{ tex \cdot }}
+ | G , x : kind :: :: hasKind
+ | G , x : sort :: :: hasSort
+ | G , x : A    :: :: hasType
+ | G , past X   :: :: past {{ com past $[[X]]$ }}
+ | G , within X   :: :: within {{ com within $[[X]]$ }}
+
+A :: 'A_' ::= {{ com Value types. }}
+ | $ X :: :: symbol {{ com Symbol. }}
+ | & X A :: :: address {{ com Address. }}
+ | { C } :: :: suspComp {{ com Suspended computation (thunk). }}
+ | { variantCases } :: :: variantType {{ com Sum type. }}
+ | { recordFields } :: :: productType {{ com Product type. }}
+
+variantCases :: 'variantCases_' ::=
+ | # X :: :: singleUnit
+ | # X : A :: :: singleVal
+ | variantCases , # X :: :: anotherUnit
+ | variantCases , # X : A :: :: anotherVal
+
+recordFields :: 'recordFields_' ::=
+ | :: :: empty
+ | X : A :: :: singleVal
+ | recordFields , X : A :: :: anotherVal
+
+C {{ tex \ensuremath{C} }} :: 'C_' ::= {{ com Computation types. }}
+ | forall x : kind => C :: :: forallKind {{ com Kinded univ. quantifier, for types. }}
+ | forall x : sort => C :: :: forallSort {{ com Sorted univ. quantifier, for symbol tree terms. }}
+ | X { C } :: :: nestedComp {{ com Named nested computation. }}
+ | E ; C :: :: effectComp {{ com Effectful computation. }}
+ | A -> C :: :: argumentValue {{ com Accept argument type $[[A]]$ for body-type $[[C]]$. }}
+ | A :: :: returnValue {{ com Return value of type $[[A]]$. }}
+ | { ncts } :: :: namedComps {{ com Branching computation, with names. }}
+
+ncts :: ncts_' ::= {{ com Named computation types. }}
+ | :: :: empty
+ | X => C , ncts :: :: namedComps
+
+Pred {{ tex \ensuremath{P} }} :: 'Pred_' ::= {{ com Predicates. }}
+ | X == Y :: :: equiv {{ com Symbol-tree term \textbf{equivalence}. }}
+ | X %% Y :: :: apart {{ com Symbol-tree term \textbf{apartness}. }}
+
+E {{ tex \ensuremath{E} }} :: 'E_' ::= {{ com Computation effects. }}
+ | exists existsSymbolTerms | Pred => E :: :: exists {{ com Exists symbol-tree terms. }} {{ tex [[exists]] [[existsSymbolTerms]]~[[|]]~[[Pred]]~[[=>]]~[[E]] }}
+ | X { E } :: :: nest
+ | E1 ; E2 :: :: sequence
+ | X := A :: :: put
+ | @ X = A :: :: get
+ | & X Y : A :: :: linkSelect
+ | return A :: :: return
+
+existsSymbolTerms {{ tex \ensuremath{\overline{x : \gamma} } }} :: existsSymbolTerms_ ::= {{ com Existentially-quantifed symbol tree terms. }}
+ | x : sort :: :: one {{ com One variable. }}
+ | existsSymbolTerms , x : sort :: :: another {{ com Another variable, same quantifier. }}
+
+S {{ tex \ensuremath{S} }} :: 'st_ ::= {{ com Symbol tree (of binary and ternary forms). }}
+ | S1 * S2 :: :: binaryForm {{ tex [[S1]]\,\underline{\cdot}\,[[S2]] }} {{ com Explicit binary form. }}
+ | S1 *[ S2 ] S3 :: :: ternaryform  {{ tex [[S1]]\,\underline{\cdot}^[[S2]]\,[[S3]] }} {{ com Explicit ternary form. }}
+ | s S :: S :: oneMore {{ tex [[s]]{}[[S]] }} {{ com Sequencing as implicit (iterated) binary combination. }}
+ | :: S :: empty {{ com Empty sequence. Identity element for implicit sequencing. }}
+ | ( S1 ) S2 :: S :: balParen {{ tex \texttt{(}[[S1]]\texttt{)}[[S2]] }} {{ com Balanced parens as special ternary form. }}
+ | [ S1 ] S2 :: S :: balBrack {{ tex \texttt{[}[[S1]]\texttt{]}[[S2]] }} {{ com Balanced brackets as special ternary form. }}
+ | { S1 } S2 :: S :: balBrace {{ tex \texttt{$\lbrace$}[[S1]]\texttt{$\rbrace$}[[S2]] }} {{ com Balanced braces as special ternary form. }}
+
+sort {{ tex \ensuremath{\gamma} }} :: 'sort_' ::= {{ com Name sorts. }}
+ | #symtree :: :: st
+ | #set ( sort ) :: :: set
+ | #ord ( sort ) :: :: ord
+ | #map ( sort1 , sort2 ) :: :: map
+ | sort1 -> sort2 :: :: arrow
+ | ( sort ) :: :: paren
+
+X {{ tex \ensuremath{X} }}, Y {{ tex \ensuremath{Y} }}, Z {{ tex \ensuremath{Z} }}:: 'term_' ::= {{ com Symbolic-tree terms. }}
+ | as sort have X :: :: annotate {{ com Ascribe sort $[[sort]]$ to sub-term $[[X]]$. }}
+ | $ S :: :: symbolTree {{ com Symbol tree $[[S]]$. }}
+ | X * Y :: :: binaryForm {{ tex [[X]]\,\underline{\cdot}\,[[Y]] }} {{ com Binary tree combo, or product of two gatherings. }}
+ | X * [ Y ] Z :: :: ternaryForm {{ tex [[X]]\,\underline{\cdot^{ [[Y ]] } }\,[[Z]] }} {{ com Ternary tree combo. }}
+ | X , Y :: :: gather {{ tex [[X]]{ \texttt,}[[Y]] }} {{ com Gather subsets, or sub-mappings, or sub-orderings. }}
+ | { X } :: :: singletonSet {{ com Form gathering: Singleton set containing $[[X]]$. }}
+ | ! $ X :: :: flatten {{ com Flatten gatherings of $[[X]]$ into a single tree. }}
+ | ~ X :: :: memOf {{ com Unform gathering: Choose member of gathering $[[X]]$. }}
+ | \ x => X :: :: defineFn {{ com Symbol tree-term function space. }}
+ | \ x := X :: :: defineRec {{ com Recursive symbol tree-terms. }}
+ | X ^* Y :: :: stepStar {{ com ``Close-star'': Recursive generation of symbol tree set. }}
+ | X +* Y :: :: plusStar {{ com ``Plus-star''s: Recursive generation of symbol tree set. }}
+ | X >> Y :: :: mapGathering {{ com Transform gathering by an element-mapping function. }}
+ | X Y :: :: applyFn {{ com Apply function. }}
+ | X => Y :: :: associate {{ com Form gathering: Associate $[[X]]$ to $[[Y]]$. }}
+ | X % Y :: :: project {{ com Unform gathering: Projection asssociation for $[[Y]]$ from map $[[X]]$. }}
+ | ( X ) :: :: paren
+ | x :: :: var
+
+v :: 'v_' ::= {{ com Values. }}
+ | x :: :: var
+ | { e } :: :: thunk {{ tex \left\{ [[e]] \right\} }}
+ | # v :: :: injectUnit {{ com inject unit value into variant type. }}
+ | # v1 ( v2 ) :: :: inject {{ com inject into variant type. }}
+ | ( ) :: :: emptyRecord {{ com empty record / tuple value. }}
+ | v1 , v2 => v3 :: :: extend {{ com extend a record type. }}
+ | X :: :: symbolTerm {{ com Symbol term. }}
+
+e :: 'e_' ::= {{ com Minimal expressions. }}
+ | as C have e :: :: annot {{ tex \begin{array}{rl}[[as]]& [[C]] \\[[have]]& [[e]] \end{array} }}
+ | X { e } :: :: nest
+ | let x = e1 ; e2 :: :: letBind
+ | let fields = v ; e :: :: letBindRecord
+ | switch v { cases } :: :: switchVariant
+ | return v :: :: return
+ | \ x := e :: :: defineRec
+ | \ x => e :: :: defineFn
+ | e v :: :: applyFn
+ | e ( v ) :: S :: applyFnParen
+ | assert v1 = v2 :: :: assertEq
+ | v1 := v2 :: :: put
+ | @ v1 :: :: get
+ | & v1 :: :: linkOne
+ | & X :: :: linkSelect 
+ | { brs } :: :: namedBranches
+ | e => v :: :: selectBranch
+ | [ v / x ] e :: M :: subst
+
+ | let x = v ; :: S :: letBindValNoBody
+ | let x = v ; e :: S :: letBindVal
+
+brs :: brs_' ::=
+ | :: :: empty
+ | v => e , brs :: :: branch
+
+pat :: 'pat_' ::= {{ com Pattern-match expression. }}
+ | _ :: :: ignoreMatch
+ | x :: :: bindMatch
+ | { fields } :: :: fieldsMatch {{ com Record elim form. }}
+ | # v ( pat ) :: :: caseMatch {{ com Variant elim form. }}
+
+fields :: 'fields_' ::= {{ com Product-type fields. }}
+ | v => pat , fields :: :: field
+ | x :: :: bindRest
+
+cases :: 'cases_' ::= {{ com Variant-type cases. }}
+ | # v ( pat ) => e ; cases :: :: case
+ | otherwise e :: :: otherwise
+
+t :: 'trace_' ::= {{ com Trace. }}
+ | #empty :: :: empty {{ com Identity element for trace-sequencing (\texttt{;}), otherwise undefined. }}
+ | return v :: :: value {{ com Return value $[[v]]$. }}
+ | t1 ; t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
+ | X := v :: :: put {{ com Put into $[[X]]$ value $[[v]]$. }}
+ | @ X = v :: :: get {{ com Get from $[[X]]$ equals value $[[v]]$. }}
+ | X { t } :: :: nest {{ com Nest named $[[X]]$ with sub-trace $[[t]]$. }}
+ | & X1 X2 : A :: :: linkSelect {{ com Select link $[[X2]]$ among choices $[[X1]]$, each storing an $[[A]]$. }}
+
+stackFrame {{ tex \ensuremath{f} }} :: 'stackFrame_' ::= {{ com Stack frame. }}
+ | let x = _ ; e :: :: let {{ com Let continuation. }}
+ | _ v :: :: app {{ com Application continuation. }}
+ | X { _ } :: :: nest {{ com Named-nest continuation. }}
+
+stack {{ tex \ensuremath{\kappa} }} :: 'stack_' ::= {{ com Stack. }}
+ | halt t :: :: halt {{ tex \texttt{halt}([[t]]) }} {{ com Halt process with trace $[[t]]$. }}
+ | stack , [ stackFrame ;; t ] :: :: frame
+  {{ com Sub-stack $[[stack]]$ with local continuation $[[stackFrame]]$ and trace $[[t]]$. }}
+ | stack ; t :: S :: appendTrace
+
+process, p {{ tex \ensuremath{p} }} :: process_ ::= {{ com Process. }}
+ | < stack ;; e > :: :: running
+   {{ tex \left< [[stack]] [[;;]] [[e]] \right> }}
+   {{ com Process running, as a stack-expression pair. }}
+
+ | < stack ;; retval v > :: :: returning
+   {{ tex \left< [[stack]] [[;;]] [[retval]]~[[v]] \right> }}
+   {{ com Process returning, as a stack-return-value pair. }}
+
+netTrace, T :: netTrace_ ::= {{ com Net traces. }}
+ | exists x : sort . T :: :: existsSort
+ | X { netOp } :: :: netOp
+
+netOp :: netOp_ ::= {{ com Net operation. }}
+ | X := v : A :: :: put
+ | @ X = v : A :: :: get
+ | & X Y : A :: :: linkSelect
+ | halt ( t ) :: :: halt
+
+netProcs, N :: net ::= {{ com Net of processes. }}
+ | X { p } :: :: namedProcess
+ | N1 , N2 :: :: gatherProcs
+
+s :: 'sym_' ::= {{ com Atomic symbols. }}
+ | ! :: :: bang
+ | " :: :: dtick
+ | # :: :: hashsign
+ | $ :: :: dollar
+ | & :: :: amp
+ | ' :: :: tick
+ | '|' :: :: pipe
+ | * :: :: star
+ | + :: :: plus
+ | , :: :: comma
+ | - :: :: dash
+ | . :: :: dot
+ | / :: :: fslash
+ | 0 :: :: zero
+ | 1 :: :: one
+ | 2 :: :: two
+ | 3 :: :: three
+ | 4 :: :: four
+ | 5 :: :: five
+ | 6 :: :: six
+ | 7 :: :: seven
+ | 8 :: :: eight
+ | 9 :: :: nine
+ | : :: :: colon
+ | ; :: :: semi
+ | < :: :: less
+ | = :: :: equalsign {{ tex \texttt{=} }}
+ | > :: :: grtr {{ tex \texttt{>} }}
+ | ? :: :: quest
+ | @ :: :: atsign
+ | \ :: :: bslash
+ | ^ :: :: caret
+ | _ :: :: under
+ | ` :: :: btick
+ | ~ :: :: tilde
+ | a :: :: aa {{ tex \texttt{a} }}
+ | b :: :: bb {{ tex \texttt{b} }}
+ | c :: :: cc {{ tex \texttt{c} }}
+ | z :: :: zz {{ tex \texttt{z} }}
+ | y :: :: yy {{ tex \texttt{y} }}
+ | x :: :: xx {{ tex \texttt{x} }}
+ | xSymbol :: S :: xS {{ tex \texttt{x} }}
+
+
+kind {{ tex \ensuremath{K} }} :: kind_ ::= {{ com Kinds. }}
+ | #type :: :: type
+ | #sort :: :: sort
+ | kind1 -> kind2 :: :: arrow
+
+judgementForms :: jfs_::=
+  | G |- e : E :: :: expHasEff   {{ tex [[G]] [[|-]] [[e]] : [[E]] }}
+  | G |- p : E :: :: procHasEff  {{ tex [[G]] [[|-]] [[p]] : [[E]] }}
+  | p idle :: :: procIdle        {{ tex [[p]]~[[idle]] }}
+  | p --> p' :: :: procSteps    {{ tex [[p]] [[-->]] [[p']] }}
+
+substitutions
+single X x :: tsubst
+
+defns J :: '' ::=
+
+defn
+G |- sort1 = sort2 : kind ::  :: sortEqual :: 'sort_' by
+
+
+defn #sortIsFlat sort :: :: sortIsFlat :: 'flat_'
+{{ tex \texttt{sortIsFlat}~[[sort]]  }}
+by
+
+
+------------------ :: symTree
+#sortIsFlat #symtree
+
+#sortIsFlat sort
+----------------------- :: set
+#sortIsFlat #set(sort)
+
+#sortIsFlat sort1
+#sortIsFlat sort2
+------------------------------ :: map
+#sortIsFlat #map(sort1, sort2)
+
+
+
+defn
+G |- X : sort ::  :: hasSort :: 'sort_'
+{{ com Symbol-tree term has sort. }}
+by
+
+----------------- :: symbols
+G |- $ S : #symtree
+
+G |- X : sort
+#sortIsFlat sort
+----------------- :: flatten
+G |- !$ X : #symtree
+
+G |- X : sort2
+G |- sort1 = sort2 : kind
+---------------------------- :: annot
+G |- as sort1 have X : sort1
+
+
+G |- X : #symtree
+G |- Y : sort
+#sortIsFlat sort
+-------------------------------- :: stL
+G |- X * Y : sort
+
+G |- X : sort
+G |- Y : #symtree
+#sortIsFlat sort
+-------------------------------- :: stR
+G |- X * Y : sort
+
+G |- X : #symtree
+G |- Y : #symtree
+G |- Z : sort
+#sortIsFlat sort
+------------------------ :: ternL
+G |- X *[ Y ] Z : sort
+
+G |- X : sort
+G |- Y : #symtree
+G |- Z : #symtree
+#sortIsFlat sort
+------------------------ :: ternR
+G |- X *[ Y ] Z : sort
+
+
+
+G |- X : #set(sort)
+G |- Y : #set(sort)
+------------------------ :: gSet
+G |- X , Y : #set(sort)
+
+G |- X : #ord(sort)
+G |- Y : #ord(sort)
+------------------------ :: gOrd
+G |- X , Y : #ord(sort)
+
+G |- X : #map(sort1, sort2)
+G |- Y : #map(sort1, sort2)
+--------------------------------- :: gMap
+G |- X , Y : #map(sort1, sort2)
+
+G, x : sort1 |- X : sort2
+-------------------------- :: fn
+G |- \x => X : sort1 -> sort2
+
+G, x : sort |- X : sort
+-------------------------- :: rec
+G |- \x := X : sort
+
+G |- X : sort1 -> sort2
+G |- Y : sort1
+------------------- :: app
+G |- X Y : sort2
+
+
+G |- X : sort1
+G |- Y : sort2
+--------------------------------- :: associate
+G |- X => Y : #map(sort1, sort2)
+
+G |- X : #map(sort1, sort2)
+G |- Y : sort1
+--------------------------------- :: projMem
+G |- X % Y : sort2
+
+G |- X : #map(sort1, sort2)
+G |- Y : #set(sort1)
+--------------------------------- :: projSet
+G |- X % Y : #set(sort2)
+
+
+G |- X : #set(sort)
+-------------------- :: memOf
+G |- ~ X : sort
+
+G |- X : #set(sort)
+G |- Y : sort -> #set(sort)
+---------------------------- :: stepStar
+G |- X ^* Y : #set(sort)
+
+G |- X : #set(sort)
+G |- Y : sort -> #set(sort)
+---------------------------- :: plusStar
+G |- X +* Y : #set(sort)
+
+
+G |- X : #symtree
+G |- Y : #symtree -> #symtree
+---------------------------- :: mapSt
+G |- X >> Y : #symtree
+
+G |- X : #set(sort)
+G |- Y : sort -> #set(sort)
+---------------------------- :: mapSet
+G |- X >> Y : #set(sort)
+
+G |- X : #ord(sort)
+G |- Y : sort -> #ord(sort)
+---------------------------- :: mapOrd
+G |- X >> Y : #ord(sort)
+
+G |- X : #map(sort1, sort2)
+G |- Y : sort1 -> (sort2 -> #map(sort1', sort2'))
+------------------------------------------------- :: mapMap
+G |- X >> Y : #map(sort1', sort2')
+
+
+
+defn
+G ~> X ; Y ::  :: contextHasSmbolTreeFns :: 'stfs_'
+{{ com Context has symbol-tree functions for current and just-past nest names. }}
+by
+
+
+---------------------------- :: emp
+#empty ~> \x => x ; \y => y
+
+G ~> X ; Y
+--------------------- :: varKind
+G, x : kind ~> X ; Y
+
+G ~> X ; Y
+----------------------- :: varSort
+G, x : sort ~> X ; Y
+
+G ~> X ; Y
+----------------- :: varType
+G, x : A ~> X ; Y
+
+G ~> X ; Y
+-------------------------------- :: past
+G, past Y ~> X ; \y => (Y * y)
+
+G ~> X1 ; Y
+---------------------------------------------- :: within
+G, within X2 ~> \x => (X1 (X2 * x)) ; \y => y
+
+defn
+G1 |- E ~> G2 ::  :: effContext :: effContext_
+{{ com Witness effects of past (top-level) nests as context frames. }}
+by
+
+---------------------------- :: past
+G |- X { E } ~> G, past X
+
+G1 |- E1 ~> G2
+G2 |- E2 ~> G3
+------------------ :: seq
+G1 |- E1 ; E2 ~> G3
+
+------------------ :: get
+G |- @ X = A ~> G
+
+------------------ :: put
+G |- X := A ~> G
+
+------------------ :: return
+G |- return A ~> G
+
+
+defn
+G |- v : A ::  :: valHasType :: 'vty_' by
+
+-------------- :: unitVal
+G |- () : {}
+
+x : A in G
+------------ :: var
+G |- x : A
+
+
+G |- X : #symtree
+------------------ :: symtree
+G |- X : $ X
+
+G |- v : $ X
+----------------------- :: injUnit
+G |- # v : { # X : {} }
+
+G |- v1 : $ X
+G |- v2 : A
+--------------------------- :: injVal
+G |- # v1 ( v2 ) : { # X : A }
+
+G |- v1 : { recordFields }
+G |- v2 : $X
+G |- v3 : A
+-------------------------------------- :: recordExt
+G |- v1 , v2 => v3 : { recordFields, X : A }
+
+G |- e : C
+--------------------- :: thunk
+G |- { e } : { C }
+
+defn
+G |- e : C ::  :: compHasType :: 'cty_' by
+
+G |- v : A
+------------------ :: ret
+G |- return v : A
+
+G1 |- e1 : E ; A
+G1 |- E ~> G2
+G2, x : A |- e2 : C
+--------------------------- :: let
+G1 |- let x = e1 ; e2 : C
+
+G, x : A |- e : C
+----------------------- :: lam
+G |- \x => e : A -> C
+
+G, x : {C} |- e : C
+--------------------- :: fix
+G |- \x := e : C
+
+G |- v : A
+G |- e : E ; A -> C
+------------------------- :: app
+G |- e v : E ; C
+
+G, within X |- e : C
+------------------------ :: nest
+G |- X { e } : X { C }
+
+G |- v1 : $ Z
+G ~> X ; Y
+G |- v2 : A
+---------------------------------------- :: put
+G |- v1 := v2 : X(Y(Z)) := A ; & X(Y(Z)) A
+
+G |- v : & X A
+----------------------- :: get
+G |- @ v : @ X = A ; A
+
+G |- v : $ X
+-------------------------------- :: linkSingle
+G |- & v : & X {X} : A ; & X A
+
+G |- X : #set(#symtree)
+---------------------------------------------------------------------------------- :: linkSelect
+G |- & X : exists x1:#symtree, x2:#set(#symtree) | X == {x1},x2 => & X x1 : A ; & x1 A
+
+% let fields = v ; e :: :: letBindRecord
+% switch v { cases } :: :: switchVariant
+% assert v1 = v2 :: :: assertEq
+% { brs } :: :: namedBranches
+%  e => v :: :: selectBranch
+
+defn
+G |- t : E  :: :: traceHasEff :: 'tr_' by
+
+G |- v : A
+--------------------------- :: return
+G |- return v : return A
+
+G |- t1 : E1
+G |- t2 : E2
+----------------------- :: seq
+G |- t1 ; t2 : E1 ; E2
+
+G |- v : A
+G |- X : #symtree
+------------------------ :: put
+G |- X := v : X := A
+
+G |- v : A
+G |- X : #symtree
+------------------------ :: get
+G |- @ X = v : @ X = A
+
+G |- t : E
+G |- X : #symtree
+------------------------ :: nest
+G |- X { t } : X { E }
+
+G |- X : #set(#symtree)
+G |- Y : #symtree
+------------------------------ :: linkSelect
+G |- & X Y : A   :   & X Y : A
+
+defn
+to do
+:: :: todo :: todo_
+{{ com Fake judgement, for leaving to do notes. }}
+by
+
+
+defn
+pat ;; v ;; e --> e'
+:: :: patMatch :: pm_
+by
+
+
+defn
+v1 ;; v2 ;; cases --> e
+:: :: casesStep :: cases_
+{{ com Switch-cases step. }}
+by
+
+pat ;; v ;; e --> e'
+------------------------------------------ :: match
+X ;; v ;; # X ( pat ) => e ; cases --> e'
+
+
+v1 ;; v2 ;; cases --> e'
+------------------------------------------ :: rec
+v1 ;; v2 ;; #v3 (pat) => e ; cases --> e'
+
+------------------------------ :: otherwise
+v1 ;; v2 ;; otherwise e --> e
+
+defn
+fields ;; v ;; e --> e'
+:: :: fieldsStep :: fields_
+{{ com Let-fields step. }}
+by
+
+% to do -- add rules here.
+
+defn
+e1 --> e2
+:: :: expStep :: eStep_
+{{ com Locally, expression $[[e1]]$ steps to $[[e2]]$. }}
+by
+
+v ;; ( ) ;; cases --> e
+--------------------------- :: variantCases1
+switch #v { cases } --> e
+
+v1 ;; v2 ;; cases --> e
+--------------------------- :: variantCases2
+switch #v1(v2) { cases } --> e
+
+
+fields ;; v ;; e --> e'
+-------------------------- :: recordProject
+let fields = v ; e --> e'
+
+
+defn
+p1 --> p2
+:: :: procStep :: pStep_
+{{ com Process $[[p1]]$ steps to process $[[p1]]$. }}
+by
+
+e1 --> e2
+-------------------------------------------------------------------- :: local
+<stack;; e1> --> <stack;; e2>
+
+-------------------------------------------------------------------- :: letEnter
+<stack;; let x = e1; e2> --> <stack, [let x = _; e2 ;; #empty];; e1>
+
+---------------------------------------------------- :: return
+<stack;; return v> --> <stack; return v;; retval v>
+
+--------------------------------------------------------------------- :: letReturn
+<stack, [let x = _; e2 ;; t1];; retval v> --> <stack; t1;; [v/x]e2>
+
+-------------------------------------------------- :: nestEnter
+<stack;; X{e}> --> <stack, [X{_};; #empty];; e>
+
+----------------------------------------------------------- :: nestLeave
+<stack, [X{_};; t];; retval v> --> <stack;X{t};; retval v>
+
+----------------------------------------------------------- :: applyEnter
+<stack;; e v> --> <stack, [_ v;; #empty];; e>
+
+----------------------------------------------------------- :: applyLambda
+<stack, [_ v2;; t1];; \x => e> --> <stack; t1;; [v2/x]e>
+
+
+defn
+p idle
+:: :: processIsIdle :: pIdle_
+by
+
+
+defn
+G |- p : E
+:: :: processHasEff :: pEff_ 
+by
+
+% to do -- rules.
+
+defn
+G |- T ;; N : E
+:: :: netHasEff :: nEff_ 
+by
+
+% to do -- rules.

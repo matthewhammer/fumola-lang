@@ -1,0 +1,320 @@
+\documentclass[11pt]{article}
+\usepackage{charter}
+\usepackage{euler}
+\usepackage{inconsolata}
+\usepackage{xcolor}
+
+\newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
+\newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
+\newcommand{\ottkw}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\ottcom}[1]{{#1}}
+\newcommand{\ottsym}[1]{{#1}}
+
+\begin{document}
+
+\author{Matthew A. Hammer}
+\title{Fumola Core Calculus: Examples}
+
+\maketitle
+
+Minimal syntax examples in Ott$+$\LaTeX{}, and description in English.
+
+Notes: 
+(1) This document is a work in progress.
+(2) While in progress, there is overlap in the content of this document and other documents here.
+
+\subsection*{Motivation}
+
+Dear Reader,
+
+Please first see other Fumola documents for motivation and background information.
+This document is about describing concrete examples given that background already in mind.
+
+\noindent
+Kind wishes,
+Matthew (2020-04-05 14:09)
+
+\paragraph{Meta variables for program variables}
+
+\[ [[ x ]], [[ y ]], [[ z ]]\]
+
+When using lexically-scoped variables that follow the usual principles
+of substitution and alpha conversion, we use italics (as with $x, y,
+z$, above).  Italics distinguish these meta variables from
+\emph{symbols}, that do not follow ordinary lexical scoping or
+substitution rules.
+
+\paragraph{Symbols (as trees)}
+
+Fumola is distinguished from functional languages in how it models
+symbolic effects.  Please see the Overview Document for more.
+
+Concretely, each symbol is generally a \emph{tree}, formed from binary
+connectives, balanced delimiters and possibly other (simple) connective forms.
+
+Atomic symbols, as examples, letters 'a' and 'b', 'x':
+
+\[ [[ a ]]\]
+\[ [[ b ]]\]
+\[ [[ xSymbol ]]\]
+
+Atomic symbol sequencing:
+%Fixed: (note the slight space between the letters)
+
+\[ [[ a b c ]]\]
+
+%FIXED: Notice there are spaces here and throughout.
+%We use these spaces for the Ott parsing technique here but they have
+%no meaning.
+%(In Fumola, most symbol trees are free of spaces, like
+%identifers in ordinary programming languages.)
+%Our future parsers will not require spaces to parse symbol sequences made of individual letters.
+
+Sequences with balanced delimiters (paren, brace, bracket):
+
+\[ [[ ( a b c ) ]]\]
+\[ [[ a ( b { c } a ) ]]\]
+\[ [[ a ( ( b ) ( ) [ c b ] ) ]]\]
+
+With commas and other internal delimiters
+
+\[ [[ a ( b , ,  b  , a ) ]]\]
+\[ [[ a ( c ; { b } ; , a ) ]]\]
+\[ [[ a ( ( , - - c , ) ( ) [ b | a b ( c a ) a ] ) ]]\]
+
+\subsection*{Symbol-tree term sub-language}
+
+Symbol trees  address process state and to identify a process's past sub-traces, for incremental reuse.
+
+Programs describe symbols in abstract ways by using a \emph{symbol tree sub-language}, whose terms may appear in types, effects and first-class values of the process language.
+
+Unlike the process language, these terms are highly restricted, giving them (hopefully!) decideable relational properties, like equivalence and \emph{apartness}, the property of being mutually distinct, but raised to higher types.
+
+So that these properties can be mechanically checked, these terms cannot express full programs, as they cannot do anything effectful, nor express general recursion, nor general algorithms.
+
+\paragraph{Constant symbol-tree terms}
+
+We prefix symbol trees with \textbf{\$} to promote them into constant
+terms.
+
+\[ [[ $ a ]]\]
+\[ [[ $ a b b a ]]\]
+
+ Within the constant's concrete syntax, we can even use distinguished
+symbols from the language (like the arrow for functions) as symbols
+with domain-specific (or program-specific) meaning.
+
+Consider this term:
+
+\[ [[ (\x => $(b*x)) $ a ]]\]
+
+And compare to this second version, with a different parenthesis placement:
+
+\[ [[ (\x => ($b) * x) $ a ]]\]
+
+Notice that the second version's use of parenthesis to delimit the end of symbol $[[ $b ]]$.
+
+If we move them, we could mis-parse terms that use special symbols, as in the initial version,
+where we interpret \texttt{*} and \texttt{x} differently, as part of a single symbol tree.
+
+When we do not want to parse this aggressively, we place parenthesis
+pairs around the entire symbol constant, as in the second version.
+
+In some cases, we may want the initial version,
+which always evaluates to (constant) symbol tree $[[$b * x]]$.
+
+By contrast, the second version forms a ``new symbol'' by prepending symbol $[[$b]]$ to its argument, some pre-existing symbol choice; specifically, the second function application reduces to (the single symbol tree) $[[($b)*$a]]$.
+
+\paragraph{Symbolic combination of terms.}
+
+In Fumola,
+symbol trees are formed as binary and ternary combinations of pre-existing symbol trees, starting with basic parsing tokens, including individual special characters and (entire) identifier-char strings.
+
+While we use an infix asterisk ($\_{\texttt{*}}\_$) in concrete program syntax, in these documents we will use the specical mathematical notation $\_ \underline{\cdot} \_$.  This more stylized appearance emphasizes that the resulting symbol tree is indeed a tree structure (formed from nested connections), not a string structure (formed entirely by a flattened sequence).  Ott$+$\LaTeX{} helps us write asterisk while getting this appearance in PDF output.
+
+Each is distinct:
+
+\[ [[ ($ a) * $ b a ]]\]
+\[ [[ ($ a) * (($ b a) * $ b a) ]]\]
+\[ [[ (($ a ) * $ b a ) * ($ b a) ]]\]
+
+We use the parens above to avoid unintended parses.
+
+Recall that they can also be present in the symbol structure, as symbol structure:
+
+\[ [[ ($ (a)) * $ b a ]]\]
+\[ [[ ($ a) * $ (b) a ]]\]
+\[ [[ ($ a) * $ b (a) ]]\]
+\[ [[ ($ a) * $ (b a) ]]\]
+
+Each of these examples is distinct, and each is distinct from
+
+\[ [[ ($ a) * $ b a ]]\]
+
+which is equal to all of these
+
+\[ [[ (($ a) * $ b a) ]]\]
+\[ [[ ((($ a) * $ b a)) ]]\]
+\[ [[ (((($ a) * $ b a))) ]]\]
+
+The extra parenthesis \emph{around} the symbol tree terms play no role
+except to help parse that outermost tree form in the presence of any
+enclosing terms.  But more than a single extra enclosure is not ever
+needed.
+
+Consider
+
+\[ [[ (\x => ($b) * x) $ a ]]\]
+
+Within this term, the function $[[(\x => ($b) * x)]]$ is applied to the argument term $[[ $a ]]$.
+And thus, the whole term normalizes as
+
+ \[ [[ ($b) * $a ]] \]
+
+We write $[[\]]$ as ``backslash''.
+
+\subsection*{Process programs}
+
+Programs in Fumola are each a Fumola \emph{process}, and described in terms of Fumola expressions and values that contain symbol tree terms.
+
+Recall that symbol tree terms are not full programs, as they cannot do anything effectful, and cannot express general recursion or general algorithms.
+
+Rather, symbol tree terms are used by Fumola processes to address process state and to identify a process's past sub-traces, for incremental reuse.
+
+\subsection*{Value and expression forms}
+
+\paragraph{Call-by-push value (CBPV) process syntax.}
+
+A practical version of Fumola would permit call-by-value syntax for describing a process's program.
+
+But in our Ott development, we are using a more restricted form of syntax, call-by-push value (CPBV).
+
+This core calculus form of Fumola minimizes its syntactic complexity,
+often at the cost of writing more intermediate let-bindings in our
+examples.
+
+For instance, we write these two steps with a let binding
+
+\[ [[ let y = &$a ; @y ]] \]
+
+The \texttt{let} construct combines the address-of operation (\texttt{\&}) and the get operation (\texttt{@}) and into a single expression, and conceptually into one step.
+
+We may even want to write this instead:
+
+\[ [[ @(&$a) ]] \]
+
+Or even simply
+
+\[ [[ @&$a ]] \]
+
+But the CBPV form programmer must write the \texttt{let} form explicitly, and may not write these shorter forms.  By forcing this structure on the program and its programmer(s), this verbosity in examples saves on complexity in the formal system, and is worth it.
+
+\paragraph{Symbol trees as record field names}
+
+to do
+
+\paragraph{Symbol trees as variant names}
+
+Prefix a symbol tree with hash character (\texttt{\#}) to create a variant constructor name.
+
+Sometimes, such a constructor name is called a ``tag'' for the variant type.
+In Fumola, each such tag is a symbol tree.
+
+When we consider entire types, each distinct symbol tree is a distinct variant constructor (type), and we use the equality reasoning for symbol trees to reason about equality of the variant types that they identify.
+
+These are each distinct injected values (of the same unit value), because the symbol trees that identify the injection are each distinct:
+
+\[ [[ # $ a b b a ]]\]
+\[ [[ # ($ a b ) * ($ b a) ]]\]
+\[ [[ # ($ a ) * ($ b ) * ($ b a) ]]\]
+
+Symbol trees in fumola are first-class values, and these constructor names can be parameterized using these values.  For example, this function creates a variant value using its parameter, a symbol tree, and returns this value:
+
+\[ [[ \x => return # x ]] \]
+
+The type of this function is parametric in the input symbol tree~$x$, and uses this quantified parameter to identify the output type:
+
+\[ [[ forall x : #symtree => $x -> {#x} ]] \]
+
+We can get the distinct injected values above by applying this function repeatedly:
+
+\[ [[ let x = {as forall x : #symtree => $x -> {#x}
+               have \x => return # x }; ]] \]
+\[ [[ x $ a b b a ]]\]
+\[ [[ x ( ( $ a b ) * ($ b a) )  ]]\]
+\[ [[ x ( ($ a ) * ($ b ) * ($ b a) ) ]]\]
+
+Notice that this small example begins to feel like meta programming: the distinct \emph{names} of distinct types are being passed as extra parameters; we discuss meta programming later in this document.
+
+\paragraph{Put values into ambient state.}
+
+Store value $[[#$ a b c]]$ into address named $[[$a]]$, and return that name as an adddress:
+
+\[ [[ let x = ($a := #$ a b c) ; return x]] \]
+
+We use the parens for readability, but they are optional:
+
+\[ [[ let x = $a := #$ a b c ; return x]] \]
+
+\paragraph{Get the value back from that address.}
+
+\[ [[ @x ]] \]
+
+If no other puts have occurred on this address, then the value of that get operation is
+
+\[ [[ #$ a b c ]] \]
+
+Alternatively, we can assemble the address ourselves and do the get without the let-bound variable $x$:
+
+\[ [[ let y = &$a ; @y ]] \]
+
+also results in getting the same address, and its value
+
+\[ [[ #$ a b c ]] \]
+
+\paragraph{Named nested expressions}
+
+\[ [[ $a { $b { $c { $x { return $3 } } } } ]] \]
+
+\section*{Data structures}
+
+\subsection*{Lists and stacks}
+
+to do
+
+\subsection*{General sequences}
+
+to do
+
+\subsection*{General maps}
+
+to do
+
+\section*{Algorithms}
+
+\subsection*{Linear transformations}
+
+to do
+
+\subsection*{Divide and conquer}
+
+to do
+
+\subsection*{General fixed points}
+
+Consider abstract interpretation-type algorithms.
+
+to do
+
+
+\subsection*{Meta programming in Fumola}
+
+In larger examples, we will (to do) write functions that generate variant and product types, recursively, from general data structures of symbol trees, such as lists or maps.
+
+These larger examples will (to do) demonstrate that Fumola permits abstraction patterns that go beyond traditional variations of the typed lambda calculus, and begin to resemble other meta programming patterns from settings with fewer type guarantees, e.g., SmallTalk family, or the Lisp/Scheme families of languages.
+
+Those well-established families of languages are designed for live programming, and domain-specific customization.  They tend to present language structure as library modules, rather than primitive language features.  They excel at creating customized, live developer experiences. They freely permit logic that reflects on its own representation as code, especially regarding developer-chosen symbol names and component organization.
+
+Just as in those well-established settings, we anticipate the meta programming patterns found that that we import into Fumola will be useful for authoring tools for authoring tools, such as domain-specific live programming environments.
+
+\end{document}

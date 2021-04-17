@@ -1,0 +1,9 @@
+examples.tex
+overview.tex
+fumola.v
+fumola.tex
+*.aux
+*.log
+*~
+\#*
+*.pdf
