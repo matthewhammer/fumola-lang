@@ -15,6 +15,7 @@ formula :: 'formula_' ::=
 
 
 terminals :: 'terminals_' ::=
+| == :: :: equiv {{ tex \equiv }}
 | forall :: :: forall {{ tex \forall }}
 | \ :: :: lambda {{ tex \lambda }}
 | -> :: :: rightarrow {{ tex \texttt{->} }}
@@ -80,12 +81,22 @@ ncts :: ncts_' ::= {{ com Named computation types. }}
  | :: :: empty
  | X => C , ncts :: :: namedComps
 
+Pred :: 'Pred_' ::= {{ com Predicates. }}
+ | X == Y :: :: equiv
+ | X % Y :: :: apart
+
 E {{ tex \ensuremath{E} }} :: 'E_' ::= {{ com Computation effects. }}
+ | exists existsSymbolTerms | Pred => E :: :: exists {{ com Exists symbol-tree terms. }}
  | X { E } :: :: nest
  | E1 ; E2 :: :: sequence
  | X := A :: :: put
  | @ X = A :: :: get
+ | & X Y : A :: :: linkSelect
  | return A :: :: return
+
+existsSymbolTerms :: existsSymbolTerms_ ::= {{ com Existentially-quantifed symbol tree terms. }}
+ | x : sort :: :: one {{ com One variable. }}
+ | existsSymbolTerms , x : sort :: :: another {{ com Another variable, same quantifier. }}
 
 S {{ tex \ensuremath{S} }} :: 'st_ ::= {{ com Symbol tree (of binary and ternary forms). }}
  | S1 * S2 :: :: binaryForm {{ tex [[S1]]\,\underline{\cdot}\,[[S2]] }} {{ com Explicit binary form. }}
@@ -104,7 +115,7 @@ sort {{ tex \ensuremath{\gamma} }} :: 'sort_' ::= {{ com Name sorts. }}
  | sort1 -> sort2 :: :: arrow
  | ( sort ) :: :: paren
 
-X, Y, Z :: 'term_' ::= {{ com Symbolic-tree terms. }}
+X {{ tex \ensuremath{X} }}, Y {{ tex \ensuremath{Y} }}, Z {{ tex \ensuremath{Z} }}:: 'term_' ::= {{ com Symbolic-tree terms. }}
  | as sort have X :: :: annotate {{ com Ascribe sort $[[sort]]$ to sub-term $[[X]]$. }}
  | $ S :: :: symbolTree {{ com Symbol tree $[[S]]$. }}
  | X * Y :: :: binaryForm {{ tex [[X]]\,\underline{\cdot}\,[[Y]] }} {{ com Binary tree combo, or product of two gatherings. }}
@@ -147,7 +158,8 @@ e :: 'e_' ::= {{ com Minimal expressions. }}
  | assert v1 = v2 :: :: assertEq
  | v1 := v2 :: :: put
  | @ v1 :: :: get
- | & v1 :: :: addr
+ | & v1 :: :: linkOne
+ | & X :: :: linkSelect 
  | { brs } :: :: namedBranches
  | e => v :: :: selectBranch
  | [ v / x ] e :: M :: subst
@@ -180,6 +192,7 @@ t :: 'trace_' ::= {{ com Trace. }}
  | X := v :: :: put {{ com Put into $[[X]]$ value $[[v]]$. }}
  | @ X = v :: :: get {{ com Get from $[[X]]$ equals value $[[v]]$. }}
  | X { t } :: :: nest {{ com Nest named $[[X]]$ with sub-trace $[[t]]$. }}
+ | & X1 X2 : A :: :: linkSelect {{ com Select link $[[X2]]$ among choices $[[X1]]$, each storing an $[[A]]$. }}
 
 stackFrame {{ tex \ensuremath{f} }} :: 'stackFrame_' ::= {{ com Stack frame. }}
  | let x = _ ; e :: :: let {{ com Let continuation. }}
@@ -208,7 +221,7 @@ netTrace, T :: netTrace_ ::= {{ com Net traces. }}
 netOp :: netOp_ ::= {{ com Net operation. }}
  | X := v : A :: :: put
  | @ X = v : A :: :: get
- | & X : A :: :: link
+ | & X Y : A :: :: linkSelect
  | halt ( t ) :: :: halt
 
 netProcs, N :: net ::= {{ com Net of processes. }}
@@ -554,9 +567,14 @@ G |- v : & X A
 ----------------------- :: get
 G |- @ v : @ X = A ; A
 
-% to do
+G |- v : $ X
+-------------------------------- :: linkSingle
+G |- & v : & X {X} : A ; & X A
 
-% link expression, link effect
+G |- X : #set(#symtree)
+---------------------------------------------------------------------------------- :: linkSelect
+G |- & X : exists x1:#symtree, x2:#set(#symtree) | X == {x1},x2 => & X x1 : A ; & x1 A
+
 % let fields = v ; e :: :: letBindRecord
 % switch v { cases } :: :: switchVariant
 % assert v1 = v2 :: :: assertEq
@@ -590,7 +608,10 @@ G |- X : #symtree
 ------------------------ :: nest
 G |- X { t } : X { E }
 
-% to do -- link op
+G |- X : #set(#symtree)
+G |- Y : #symtree
+------------------------------ :: linkSelect
+G |- & X Y : A   :   & X Y : A
 
 defn
 to do
