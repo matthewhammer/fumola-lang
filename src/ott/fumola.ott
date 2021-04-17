@@ -2,6 +2,7 @@ embed {{ tex-preamble
 \usepackage{charter}
 \usepackage{euler}
 \usepackage{inconsolata}
+\usepackage{mathabx} % for otriangleup
 }}
 
 metavar x , y , z ::=
@@ -17,6 +18,8 @@ formula :: 'formula_' ::=
 terminals :: 'terminals_' ::=
 | == :: :: equiv {{ tex \equiv }}
 | forall :: :: forall {{ tex \forall }}
+| exists :: :: exists {{ tex \exists }}
+| %% :: :: apart {{ tex \otriangleup }}
 | \ :: :: lambda {{ tex \lambda }}
 | -> :: :: rightarrow {{ tex \texttt{->} }}
 | => :: :: thickrightarrow {{ tex \texttt{=>} }}
@@ -69,24 +72,24 @@ recordFields :: 'recordFields_' ::=
  | recordFields , X : A :: :: anotherVal
 
 C {{ tex \ensuremath{C} }} :: 'C_' ::= {{ com Computation types. }}
- | forall x : kind => C :: :: forallKind
- | forall x : sort => C :: :: forallSort
- | X { C } :: :: nestedComp
- | E ; C :: :: effectComp
- | A -> C :: :: argumentValue
- | A :: :: returnValue
- | { ncts } :: :: namedComps
+ | forall x : kind => C :: :: forallKind {{ com Kinded univ. quantifier, for types. }}
+ | forall x : sort => C :: :: forallSort {{ com Sorted univ. quantifier, for symbol tree terms. }}
+ | X { C } :: :: nestedComp {{ com Named nested computation. }}
+ | E ; C :: :: effectComp {{ com Effectful computation. }}
+ | A -> C :: :: argumentValue {{ com Accept argument type $[[A]]$ for body-type $[[C]]$. }}
+ | A :: :: returnValue {{ com Return value of type $[[A]]$. }}
+ | { ncts } :: :: namedComps {{ com Branching computation, with names. }}
 
 ncts :: ncts_' ::= {{ com Named computation types. }}
  | :: :: empty
  | X => C , ncts :: :: namedComps
 
-Pred :: 'Pred_' ::= {{ com Predicates. }}
- | X == Y :: :: equiv
- | X % Y :: :: apart
+Pred {{ tex \ensuremath{P} }} :: 'Pred_' ::= {{ com Predicates. }}
+ | X == Y :: :: equiv {{ com Symbol-tree term \textbf{equivalence}. }}
+ | X %% Y :: :: apart {{ com Symbol-tree term \textbf{apartness}. }}
 
 E {{ tex \ensuremath{E} }} :: 'E_' ::= {{ com Computation effects. }}
- | exists existsSymbolTerms | Pred => E :: :: exists {{ com Exists symbol-tree terms. }}
+ | exists existsSymbolTerms | Pred => E :: :: exists {{ com Exists symbol-tree terms. }} {{ tex [[exists]] [[existsSymbolTerms]]~[[|]]~[[Pred]]~[[=>]]~[[E]] }}
  | X { E } :: :: nest
  | E1 ; E2 :: :: sequence
  | X := A :: :: put
@@ -94,7 +97,7 @@ E {{ tex \ensuremath{E} }} :: 'E_' ::= {{ com Computation effects. }}
  | & X Y : A :: :: linkSelect
  | return A :: :: return
 
-existsSymbolTerms :: existsSymbolTerms_ ::= {{ com Existentially-quantifed symbol tree terms. }}
+existsSymbolTerms {{ tex \ensuremath{\overline{x : \gamma} } }} :: existsSymbolTerms_ ::= {{ com Existentially-quantifed symbol tree terms. }}
  | x : sort :: :: one {{ com One variable. }}
  | existsSymbolTerms , x : sort :: :: another {{ com Another variable, same quantifier. }}
 
