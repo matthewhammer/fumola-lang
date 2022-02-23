@@ -1,18 +1,19 @@
-
 use structopt::StructOpt;
 
-use clap::Shell;
+use structopt::{clap, clap::Shell};
 use log::info;
 
-//use candid::Decode;
-use ic_agent::Agent;
-use ic_types::Principal;
-
-
 use std::io;
-use std::time::Duration;
 
 use fumola::error::OurResult;
+
+#[test]
+fn example() {
+    let expr = fumola::parser::ExprParser::new()
+        .parse("11 + 22 * 44 + 66")
+        .unwrap();
+    assert_eq!(&format!("{:?}", expr), "Op(Number(11), Add, Op(Op(Number(22), Mul, Number(44)), Add, Number(66)))");
+}
 
 /// Fumola tools
 #[derive(StructOpt, Debug, Clone)]
@@ -53,13 +54,9 @@ fn init_log(level_filter: log::LevelFilter) {
         .init();
 }
 
-#[tokio::main]
-async fn main() -> OurResult<()> {
+fn main() -> OurResult<()> {
     info!("Starting...");
     let cli_opt = CliOpt::from_args();
-    let cc = {
-        let cli_opt = cli_opt.clone();
-    };
     info!("Init log...");
     init_log(
         match (cli_opt.log_trace, cli_opt.log_debug, cli_opt.log_info) {
