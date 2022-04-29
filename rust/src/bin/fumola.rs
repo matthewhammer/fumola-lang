@@ -12,7 +12,8 @@ fn example() {
     let expr = fumola::parser::ExprParser::new()
         .parse("11 + 22 * 44 + 66")
         .unwrap();
-    assert_eq!(&format!("{:?}", expr), "Op(Number(11), Add, Op(Op(Number(22), Mul, Number(44)), Add, Number(66)))");
+    assert_eq!(&format!("{:?}", expr),
+               "Op(Op(Number(11), Add, Op(Number(22), Mul, Number(44))), Add, Number(66))");
 }
 
 /// Fumola tools

@@ -9,7 +9,7 @@ build = "build.rs"
 lalrpop = "0.19.7"
 
 [dependencies]
-lalrpop-util = "0.19"
+lalrpop-util = "0.19.7"
 regex = "1"
 env_logger = "0.6"
 log = "0.4"
