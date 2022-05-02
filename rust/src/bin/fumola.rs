@@ -9,11 +9,11 @@ use fumola::error::OurResult;
 
 #[test]
 fn example() {
-    let expr = fumola::parser::ExprParser::new()
+    let expr = fumola::parser::ExpParser::new()
         .parse("11 + 22 * 44 + 66")
         .unwrap();
     assert_eq!(&format!("{:?}", expr),
-               "Op(Op(Number(11), Add, Op(Number(22), Mul, Number(44))), Add, Number(66))");
+               "BinOp(BinOp(Number(11), Add, BinOp(Number(22), Mul, Number(44))), Add, Number(66))");
 }
 
 /// Fumola tools
