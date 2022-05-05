@@ -8,12 +8,21 @@ use std::io;
 use fumola::error::OurResult;
 
 #[test]
-fn example() {
+fn test_arith() {
     let expr = fumola::parser::ExpParser::new()
         .parse("11 + 22 * 44 + 66")
         .unwrap();
     assert_eq!(&format!("{:?}", expr),
                "BinOp(BinOp(Number(11), Add, BinOp(Number(22), Mul, Number(44))), Add, Number(66))");
+}
+
+#[test]
+fn test_nest() {
+    let expr = fumola::parser::ExpParser::new()
+        .parse("311 { 300 + 11 }")
+        .unwrap();
+    assert_eq!(&format!("{:?}", expr),
+               "Nest(Num(311), BinOp(Number(300), Add, Number(11)))");
 }
 
 /// Fumola tools

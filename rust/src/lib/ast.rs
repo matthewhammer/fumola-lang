@@ -1,28 +1,30 @@
 #[derive(Debug)]
 pub enum Exp {
-    Lambda(Id, Box<Exp>),
-    App(Box<Exp>, Box<Exp>),
-    Assert(Val, Val),
+    Nest(Val, Box<Exp>),
     Put(Val, Val),
     Get(Val),
     Link(Val),
+    Assert(Val, Val),
+    Lambda(Id, Box<Exp>),
+    App(Box<Exp>, Val),
+    Let(Pat, Box<Exp>, Box<Exp>),
+    Ret(Val),
     Switch(Val, Cases),
     Branches(Branches),
     Project(Box<Exp>, Val),
-    Let(Id, Box<Exp>, Box<Exp>),
     LetBx(Id, Box<Exp>, Box<Exp>),
-    Ret(Val),
-
+    Extract(Val),
     BinOp(Box<Exp>, BinOp, Box<Exp>),
     Number(i32),
 }
 
 #[derive(Debug)]
 pub enum Val {
-    Bx(Box<Exp>),
+    Num(i32),
     Variant(Box<Val>, Box<Val>),
     Record(Box<RecordVal>),
     RecordExt(Box<Val>, Box<ValField>),
+    Bx(Box<Exp>),
 }
 
 pub type Id = String;
