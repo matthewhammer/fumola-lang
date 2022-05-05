@@ -31,8 +31,8 @@ pub type RecordVal = Vec<ValField>;
 
 #[derive(Debug)]
 pub struct ValField {
-    label: Val,
-    value: Val,
+    pub label: Val,
+    pub value: Val,
 }
 
 pub type Branches = Vec<Branch>;
@@ -50,21 +50,21 @@ pub enum Pat {
 
 #[derive(Debug)]
 pub struct FieldPat {
-    label: Val,
-    pattern: Pat,
+    pub label: Val,
+    pub pattern: Pat,
 }
 
 #[derive(Debug)]
 pub struct Branch {
-    label: Val,
-    body: Box<Exp>,
+    pub label: Val,
+    pub body: Box<Exp>,
 }
 
 #[derive(Debug)]
 pub struct Case {
-    label: Val,
-    pattern: Pat,
-    body: Box<Exp>,
+    pub label: Val,
+    pub pattern: Pat,
+    pub body: Box<Exp>,
 }
 
 #[derive(Debug)]
