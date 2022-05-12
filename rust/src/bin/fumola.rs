@@ -1,20 +1,21 @@
 use structopt::StructOpt;
 
-use structopt::{clap, clap::Shell};
 use log::info;
+use structopt::{clap, clap::Shell};
 
 use std::io;
 
 use fumola::error::OurResult;
-
 
 #[test]
 fn test_put_get() {
     let expr = fumola::parser::ExpParser::new()
         .parse("@`($a := 1)")
         .unwrap();
-    assert_eq!(&format!("{:?}", expr),
-               "Get(CallByValue(Put(Sym(Id(\"a\")), Num(1))))");
+    assert_eq!(
+        &format!("{:?}", expr),
+        "Get(CallByValue(Put(Sym(Id(\"a\")), Num(1))))"
+    );
 }
 
 #[test]
@@ -22,8 +23,10 @@ fn test_let_put_get() {
     let expr = fumola::parser::ExpParser::new()
         .parse("let x = $a := 1; @x")
         .unwrap();
-    assert_eq!(&format!("{:?}", expr),
-               "Let(Id(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))");
+    assert_eq!(
+        &format!("{:?}", expr),
+        "Let(Id(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))"
+    );
 }
 
 #[test]
@@ -31,8 +34,7 @@ fn test_nest() {
     let expr = fumola::parser::ExpParser::new()
         .parse("# $311 { ret 311 }")
         .unwrap();
-    assert_eq!(&format!("{:?}", expr),
-               "Nest(Sym(Num(311)), Ret(Num(311)))");
+    assert_eq!(&format!("{:?}", expr), "Nest(Sym(Num(311)), Ret(Num(311)))");
 }
 
 #[test]
