@@ -29,10 +29,10 @@ fn test_let_put_get() {
 #[test]
 fn test_nest() {
     let expr = fumola::parser::ExpParser::new()
-        .parse("#311 { ret 311 }")
+        .parse("# $311 { ret 311 }")
         .unwrap();
     assert_eq!(&format!("{:?}", expr),
-               "Nest(Num(311), Ret(Num(311)))");
+               "Nest(Sym(Num(311)), Ret(Num(311)))");
 }
 
 #[test]
