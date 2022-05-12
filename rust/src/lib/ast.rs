@@ -14,6 +14,7 @@ pub enum Exp {
     Switch(Val, Cases),
     Branches(Branches),
     Project(Box<Exp>, Val),
+    /// "Let box", as in https://arxiv.org/abs/1703.01288
     LetBx(Pat, Val, Box<Exp>),
     Extract(Val),
     BinOp(Box<Exp>, BinOp, Box<Exp>),
@@ -32,6 +33,7 @@ pub enum Val {
     Variant(Box<Val>, Box<Val>),
     Record(Box<RecordVal>),
     RecordExt(Box<Val>, Box<ValField>),
+    /// "Code box" as in https://arxiv.org/abs/1703.01288
     Bx(Box<Exp>),
 }
 
