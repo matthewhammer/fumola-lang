@@ -46,6 +46,16 @@ fn test_syms() {
                "Let(Ignore, Ret(Sym(Num(1))), Let(Ignore, Ret(Sym(Id(\"a\"))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))))))");
 }
 
+#[test]
+fn test_let_box() {
+    // box f contains code that, when given a symbol and a value, puts the value at that symbol.
+    let expr = fumola::parser::ExpParser::new()
+        .parse("let box f = {\\x => \\y => x := y}; f $a 1")
+        .unwrap();
+    assert_eq!(&format!("{:?}", expr),
+               "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Var(\"f\"), Sym(Id(\"a\"))), Num(1)))");
+}
+
 /// Fumola tools
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(

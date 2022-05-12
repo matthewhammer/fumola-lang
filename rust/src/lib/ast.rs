@@ -7,16 +7,17 @@ pub enum Exp {
     Get(Val),
     Link(Val),
     Assert(Val, Val),
-    Lambda(Id, Box<Exp>),
+    Lambda(Pat, Box<Exp>),
     App(Box<Exp>, Val),
     Let(Pat, Box<Exp>, Box<Exp>),
     Ret(Val),
     Switch(Val, Cases),
     Branches(Branches),
     Project(Box<Exp>, Val),
-    LetBx(Id, Box<Exp>, Box<Exp>),
+    LetBx(Pat, Val, Box<Exp>),
     Extract(Val),
     BinOp(Box<Exp>, BinOp, Box<Exp>),
+    Var(Id),
 }
 
 #[derive(Debug)]

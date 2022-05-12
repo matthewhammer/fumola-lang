@@ -13,15 +13,26 @@ pub ExpHdBox: Box<Exp> = {
 
 pub Exp: Exp = {
     //<e1:ExpHdBox> ";" <e2:ExpBox> => Exp::Let(Pat::Ignore, e1, e2),
+    //<e:ExpBox> "(" <v:Val> ")" => Exp::App(e, v),
     ExpHd,
 };
 
 pub ExpHd: Exp = {
+    "\\" <p:Pat> "=>" <e:ExpBox> => Exp::Lambda(p, e),
     "#" <v:Val> "{" <e:ExpBox> "}" => Exp::Nest(v, e),
     <v1:Val> ":=" <v2:Val> => Exp::Put(v1, v2),
     "@" <v1:Val> => Exp::Get(v1),
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
+    "let box" <p:Pat> "=" <v:Val> ";" <e:ExpBox> => Exp::LetBx(p, v, e),
     "ret" <v:Val> => Exp::Ret(v),    
+    Id => Exp::Var(<>),
+    ExpApp,
+};
+
+ExpApp: Exp = {
+    "(" <e:ExpBox> ")" <v:Val> => Exp::App(e, v),
+    <i:Id> <v:Val> => Exp::App(Box::new(Exp::Var(i)), v),
+    <e:ExpApp> <v:Val> => Exp::App(Box::new(e), v),
 };
 
 pub ValBox: Box<Val> = {
@@ -34,6 +45,7 @@ pub Val: Val = {
     "`" "(" <e:ExpBox> ")" => Val::CallByValue(e),
     "$" <s:Sym> => Val::Sym(s),
     Id => Val::Var(<>),
+    "{" <e:ExpBox> "}" => Val::Bx(e),
 };
 
 Num: i32 = {
