@@ -6,7 +6,7 @@ pub enum Exp {
     Put(Val, Val),
     Get(Val),
     Link(Val),
-    Assert(Val, Val),
+    AssertEq(Val, bool, Val),
     Lambda(Pat, Box<Exp>),
     App(Box<Exp>, Val),
     Let(Pat, Box<Exp>, Box<Exp>),
@@ -16,6 +16,7 @@ pub enum Exp {
     Project(Box<Exp>, Val),
     /// "Let box", as in https://arxiv.org/abs/1703.01288
     LetBx(Pat, Val, Box<Exp>),
+    /// explicit "extract" rather than implicit as in https://arxiv.org/abs/1703.01288
     Extract(Val),
     BinOp(Box<Exp>, BinOp, Box<Exp>),
     Var(Id),

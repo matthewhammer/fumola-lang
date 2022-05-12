@@ -53,7 +53,7 @@ fn test_let_box() {
         .parse("let box f = {\\x => \\y => x := y}; f $a 1")
         .unwrap();
     assert_eq!(&format!("{:?}", expr),
-               "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Var(\"f\"), Sym(Id(\"a\"))), Num(1)))");
+               "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
 }
 
 /// Fumola tools

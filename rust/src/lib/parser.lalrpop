@@ -22,16 +22,18 @@ pub ExpHd: Exp = {
     "#" <v:Val> "{" <e:ExpBox> "}" => Exp::Nest(v, e),
     <v1:Val> ":=" <v2:Val> => Exp::Put(v1, v2),
     "@" <v1:Val> => Exp::Get(v1),
+    "&" <v1:Val> => Exp::Link(v1),
+    "assert_equal" <v1:Val> <v2:Val> => Exp::AssertEq(v1, true, v2),
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
     "let box" <p:Pat> "=" <v:Val> ";" <e:ExpBox> => Exp::LetBx(p, v, e),
     "ret" <v:Val> => Exp::Ret(v),    
-    Id => Exp::Var(<>),
+    Id => Exp::Extract(Val::Var(<>)),
     ExpApp,
 };
 
 ExpApp: Exp = {
     "(" <e:ExpBox> ")" <v:Val> => Exp::App(e, v),
-    <i:Id> <v:Val> => Exp::App(Box::new(Exp::Var(i)), v),
+    <i:Id> <v:Val> => Exp::App(Box::new(Exp::Extract(Val::Var(i))), v),
     <e:ExpApp> <v:Val> => Exp::App(Box::new(e), v),
 };
 
