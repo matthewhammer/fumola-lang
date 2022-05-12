@@ -7,22 +7,41 @@ use std::io;
 
 use fumola::error::OurResult;
 
+
 #[test]
-fn test_arith() {
+fn test_put_get() {
     let expr = fumola::parser::ExpParser::new()
-        .parse("11 + 22 * 44 + 66")
+        .parse("@`($a := 1)")
         .unwrap();
     assert_eq!(&format!("{:?}", expr),
-               "BinOp(BinOp(Number(11), Add, BinOp(Number(22), Mul, Number(44))), Add, Number(66))");
+               "Get(CallByValue(Put(Sym(Id(\"a\")), Num(1))))");
+}
+
+#[test]
+fn test_let_put_get() {
+    let expr = fumola::parser::ExpParser::new()
+        .parse("let x = $a := 1; @x")
+        .unwrap();
+    assert_eq!(&format!("{:?}", expr),
+               "Let(Id(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))");
 }
 
 #[test]
 fn test_nest() {
     let expr = fumola::parser::ExpParser::new()
-        .parse("311 { 300 + 11 }")
+        .parse("#311 { ret 311 }")
         .unwrap();
     assert_eq!(&format!("{:?}", expr),
-               "Nest(Num(311), BinOp(Number(300), Add, Number(11)))");
+               "Nest(Num(311), Ret(Num(311)))");
+}
+
+#[test]
+fn test_syms() {
+    let expr = fumola::parser::ExpParser::new()
+        .parse("let _ = ret $1; let _ = ret $a; let _ = ret $a-1; let _ = ret $a.1; let _ = ret $a_1-b_2.c; ret 0")
+        .unwrap();
+    assert_eq!(&format!("{:?}", expr),
+               "Let(Ignore, Ret(Sym(Num(1))), Let(Ignore, Ret(Sym(Id(\"a\"))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))))))");
 }
 
 /// Fumola tools

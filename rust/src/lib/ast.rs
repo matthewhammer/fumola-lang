@@ -1,3 +1,6 @@
+pub type Span = std::ops::Range<usize>;
+
+
 #[derive(Debug)]
 pub enum Exp {
     Nest(Val, Box<Exp>),
@@ -15,11 +18,16 @@ pub enum Exp {
     LetBx(Id, Box<Exp>, Box<Exp>),
     Extract(Val),
     BinOp(Box<Exp>, BinOp, Box<Exp>),
-    Number(i32),
 }
 
 #[derive(Debug)]
 pub enum Val {
+    /// The special CBV value form permits us to inject expression syntax into
+    /// value syntax, deviating from CBPV. We restore CBPV before
+    /// evaluation via a simple transformation that introduces new let-var forms.
+    CallByValue(Box<Exp>),
+    Sym(Sym),
+    Var(Id),
     Num(i32),
     Variant(Box<Val>, Box<Val>),
     Record(Box<RecordVal>),
@@ -44,7 +52,20 @@ pub type FieldsPat = Vec<FieldPat>;
 pub type Cases = Vec<Case>;
 
 #[derive(Debug)]
+pub enum Sym {
+    Num(i32),
+    Id(Id),
+    Bin(Box<Sym>, Box<Sym>),
+    Tri(Box<Sym>, Box<Sym>, Box<Sym>),
+    Dash,
+    Under,
+    Dot,
+    Tick,
+}
+
+#[derive(Debug)]
 pub enum Pat {
+    Ignore,
     Id(Id),
     Fields(Box<FieldsPat>),
     Case(Box<FieldPat>),

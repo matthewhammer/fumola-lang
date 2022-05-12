@@ -1,43 +1,72 @@
 use std::str::FromStr;
-use crate::ast::{Exp, Val, BinOp};
+use crate::ast::{Exp, Val, Pat, Id, Sym};
 
 grammar;
 
-pub Val: Val = {
-    "#" <v1:ValBox> "(" <v2:ValBox> ")" => Val::Variant(v1, v2),
-    Num => Val::Num(<>),
+pub ExpBox: Box<Exp> = {
+    Exp => Box::new(<>)
+};
+
+pub ExpHdBox: Box<Exp> = {
+    ExpHd => Box::new(<>),
+}
+
+pub Exp: Exp = {
+    //<e1:ExpHdBox> ";" <e2:ExpBox> => Exp::Let(Pat::Ignore, e1, e2),
+    ExpHd,
+};
+
+pub ExpHd: Exp = {
+    "#" <v:Val> "{" <e:ExpBox> "}" => Exp::Nest(v, e),
+    <v1:Val> ":=" <v2:Val> => Exp::Put(v1, v2),
+    "@" <v1:Val> => Exp::Get(v1),
+    "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
+    "ret" <v:Val> => Exp::Ret(v),    
 };
 
 pub ValBox: Box<Val> = {
     Val => Box::new(<>),
 };
 
-pub Exp: Box<Exp> = { // (1)
-    <v:Val> "{" <e:Exp> "}" => Box::new(Exp::Nest(v, e)),
-    Exp ExpOp Factor => Box::new(Exp::BinOp(<>)), // (2)
-    Factor,
-};
-
-ExpOp: BinOp = { // (3)
-    "+" => BinOp::Add,
-    "-" => BinOp::Sub,
-};
-
-Factor: Box<Exp> = {
-    Factor FactorOp Term => Box::new(Exp::BinOp(<>)),
-    Term,
-};
-
-FactorOp: BinOp = {
-    "*" => BinOp::Mul,
-    "/" => BinOp::Div,
-};
-
-Term: Box<Exp> = {
-    Num => Box::new(Exp::Number(<>)),
-    "(" <Exp> ")"
+pub Val: Val = {
+    "#" <v1:ValBox> "(" <v2:ValBox> ")" => Val::Variant(v1, v2),
+    Num => Val::Num(<>),
+    "`" "(" <e:ExpBox> ")" => Val::CallByValue(e),
+    "$" <s:Sym> => Val::Sym(s),
+    Id => Val::Var(<>),
 };
 
 Num: i32 = {
     r"[0-9]+" => i32::from_str(<>).unwrap()
+};
+
+pub Pat: Pat = {
+    "_" => Pat::Ignore,
+    <x:Id> => Pat::Id(x),
+};
+
+pub Id: Id = {
+    r"[a-zA-Z][a-zA-Z_0-9]*" => String::from_str(<>).unwrap()
+};
+
+pub SymBox: Box<Sym> = {
+    Sym => Box::new(<>),
+};
+
+pub Sym: Sym = {
+    <s1:SymHdBox> "_" => Sym::Bin(s1, Box::new(Sym::Under)),
+    <s1:SymHdBox> "'" => Sym::Bin(s1, Box::new(Sym::Tick)),
+    <s1:SymHdBox> "." <s2:SymBox> => Sym::Tri(s1, Box::new(Sym::Dot), s2),
+    <s1:SymHdBox> "-" <s2:SymBox> => Sym::Tri(s1, Box::new(Sym::Dash), s2),
+    SymHd,
+};
+
+pub SymHd: Sym = {
+    Num => Sym::Num(<>),
+    Id => Sym::Id(<>),
+    "(" <s:Sym> ")" => s,
+};
+
+pub SymHdBox: Box<Sym> = {
+    SymHd => Box::new(<>),
 };
