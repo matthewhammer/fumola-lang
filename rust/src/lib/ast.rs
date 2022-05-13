@@ -148,7 +148,10 @@ pub mod step {
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.
     ///
-    /// (to do -- surface syntax for all of the above net-internal structure, and then we can write these more general net forms too, e.g., to represent a net that we see live somewhere)
+    /// (to do -- surface syntax for all of the above net-internal
+    /// structure, and then we can write these more general net forms
+    /// too, e.g., to represent a net that we see live somewhere, or
+    /// the final form of a net, for behavioral tests)
     pub enum Net {
         Running(Sym, Exp),
         Halted(Sym, Val),
