@@ -1,7 +1,25 @@
 use std::str::FromStr;
-use crate::ast::{Exp, Val, Pat, Id, Sym};
+use crate::ast::{Exp, Val, Pat, Id, Sym, step::Net};
 
 grammar;
+
+pub NetHd: Net = {
+    "doing" <s:Sym> "{" <e:Exp> "}" => Net::Running(s, e),
+    "being" <s:Sym> "{" <v:Val> "}" => Net::Halted(s, v),
+}
+
+pub NetHdBox: Box<Net> = {
+    NetHd => Box::new(<>)
+}
+
+pub Net: Net = {
+    <n1:NetHdBox> "|" <n2:NetBox> => Net::Gather(n1, n2),
+    NetHd,
+}
+
+pub NetBox: Box<Net> = {
+    Net => Box::new(<>),
+}
 
 pub ExpBox: Box<Exp> = {
     Exp => Box::new(<>)

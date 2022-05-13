@@ -7,53 +7,67 @@ use std::io;
 
 use fumola::error::OurResult;
 
+fn check_exp(input: &str, ast: &str) {
+    let expr = fumola::parser::ExpParser::new().parse(input).unwrap();
+    assert_eq!(&format!("{:?}", expr), ast);
+}
+
+fn check_net(input: &str, _halted: &str) {
+    let _expr = fumola::parser::NetParser::new().parse(input).unwrap();
+    // to do -- run ast and check final config against halted
+}
+
 #[test]
 fn test_put_get() {
-    let expr = fumola::parser::ExpParser::new()
-        .parse("@`($a := 1)")
-        .unwrap();
-    assert_eq!(
-        &format!("{:?}", expr),
-        "Get(CallByValue(Put(Sym(Id(\"a\")), Num(1))))"
+    check_exp(
+        "@`($a := 1)",
+        "Get(CallByValue(Put(Sym(Id(\"a\")), Num(1))))",
     );
 }
 
 #[test]
 fn test_let_put_get() {
-    let expr = fumola::parser::ExpParser::new()
-        .parse("let x = $a := 1; @x")
-        .unwrap();
-    assert_eq!(
-        &format!("{:?}", expr),
-        "Let(Id(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))"
+    check_exp(
+        "let x = $a := 1; @x",
+        "Let(Id(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))",
     );
 }
 
 #[test]
 fn test_nest() {
-    let expr = fumola::parser::ExpParser::new()
-        .parse("# $311 { ret 311 }")
-        .unwrap();
-    assert_eq!(&format!("{:?}", expr), "Nest(Sym(Num(311)), Ret(Num(311)))");
+    check_exp("# $311 { ret 311 }", "Nest(Sym(Num(311)), Ret(Num(311)))");
 }
 
 #[test]
 fn test_syms() {
-    let expr = fumola::parser::ExpParser::new()
-        .parse("let _ = ret $1; let _ = ret $a; let _ = ret $a-1; let _ = ret $a.1; let _ = ret $a_1-b_2.c; ret 0")
-        .unwrap();
-    assert_eq!(&format!("{:?}", expr),
-               "Let(Ignore, Ret(Sym(Num(1))), Let(Ignore, Ret(Sym(Id(\"a\"))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))))))");
+    check_exp(
+        "let _ = ret $1; let _ = ret $a; ret 0",
+        "Let(Ignore, Ret(Sym(Num(1))), Let(Ignore, Ret(Sym(Id(\"a\"))), Ret(Num(0))))",
+    );
+
+    check_exp("let _ = ret $a-1; let _ = ret $a.1; ret 0",
+                    "Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Ret(Num(0))))");
+
+    check_exp("let _ = ret $a_1-b_2.c; ret 0",
+                    "Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))");
 }
 
 #[test]
 fn test_let_box() {
     // box f contains code that, when given a symbol and a value, puts the value at that symbol.
-    let expr = fumola::parser::ExpParser::new()
-        .parse("let box f = {\\x => \\y => x := y}; f $a 1")
-        .unwrap();
-    assert_eq!(&format!("{:?}", expr),
-               "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
+    check_exp("let box f = {\\x => \\y => x := y}; f $a 1",
+                    "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
+}
+
+#[test]
+fn test_net_put_link_get() {
+    // By linking, doing b awaits the final result of first doing a.
+    // doing a produces an address !a-x written with 137, which doing b
+    // reads and returns as its result.
+
+    // not sure about the "!" syntax for raw, global addresses.
+    check_net("doing a { $x := 137 } | doing b { @`(@`(&$a)) }",
+              "$x-a := 137; being a { !x-a } | being b { 137 }");
 }
 
 /// Fumola tools
