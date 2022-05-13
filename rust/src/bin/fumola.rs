@@ -66,8 +66,10 @@ fn test_net_put_link_get() {
     // reads and returns as its result.
 
     // not sure about the "!" syntax for raw, global addresses.
-    check_net("doing a { $x := 137 } | doing b { @`(@`(&$a)) }",
-              "!x-a := 137; being a { !x-a } | being b { 137 }");
+    check_net(
+        "doing a { $x := 137 } | doing b { @`(@`(&$a)) }",
+        "!x-a := 137; being a { !x-a } | being b { 137 }",
+    );
 }
 
 /// Fumola tools

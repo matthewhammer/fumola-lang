@@ -104,7 +104,7 @@ pub enum BinOp {
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
-    use super::{Val, Exp, Sym, Pat};
+    use super::{Exp, Pat, Sym, Val};
 
     pub enum Trace {
         Seq(Vec<Trace>),
@@ -132,7 +132,7 @@ pub mod step {
     }
 
     pub struct Halted {
-        pub retval: Val
+        pub retval: Val,
     }
 
     pub enum ProcState {
