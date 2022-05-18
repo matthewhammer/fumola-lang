@@ -29,6 +29,7 @@ pub enum Val {
     /// evaluation via a simple transformation that introduces new let-var forms.
     CallByValue(Box<Exp>),
     Sym(Sym),
+    Ptr(Sym),
     Var(Id),
     Num(i32),
     Variant(Box<Val>, Box<Val>),
@@ -106,6 +107,36 @@ pub enum BinOp {
 pub mod step {
     use super::{Exp, Pat, Sym, Val};
 
+    /// Net surface syntax produces an ast-like structure
+    /// to represent an initial net.
+    ///
+    /// (to do -- surface syntax for all of the above net-internal
+    /// structure, and then we can write these more general net forms
+    /// too, e.g., to represent a net that we see live somewhere, or
+    /// the final form of a net, for behavioral tests)
+    #[derive(Debug)]
+    pub enum Net {
+        Running(Sym, Exp),
+        Halted(Sym, Val),
+        Gather(Box<Net>, Box<Net>),
+    }
+
+    /// Trace-Net pair.  The pair is well-formed when there exists some
+    /// initial net N0, without any trace, such that N0 steps to this TraceNet.
+    #[derive(Debug)]
+    pub struct TraceNet {
+        pub trace: Trace,
+        pub net: Net,
+    }
+
+    /// Trace-Net representation for stepping repeatedly.
+    /// Compared with TraceNet, uses Procs in place of Net.
+    pub struct TraceNetStep {
+        pub trace: Trace,
+        pub proc: Procs,
+    }
+
+    #[derive(Debug)]
     pub enum Trace {
         Seq(Vec<Trace>),
         Nest(Sym, Box<Trace>),
@@ -115,15 +146,19 @@ pub mod step {
         Link(Val, Sym),
     }
 
-    pub enum FrameCont {
-        Let(Pat, Exp),
-        App(Val),
-        Nest(Sym),
+    pub type Procs = std::collections::HashMap<Sym, Process>;
+
+    pub struct Process {
+        pub store: Store,
+        pub trace: Trace,
+        pub state: ProcState,
     }
 
-    pub struct Frame {
-        pub cont: FrameCont,
-        pub trace: Trace,
+    pub type Store = std::collections::HashMap<Sym, Val>;
+
+    pub enum ProcState {
+        Running(Running),
+        Halted(Halted),
     }
 
     pub struct Running {
@@ -135,39 +170,15 @@ pub mod step {
         pub retval: Val,
     }
 
-    pub enum ProcState {
-        Running(Running),
-        Halted(Halted),
-    }
-
-    pub struct Process {
+    pub struct Frame {
+        pub cont: FrameCont,
         pub trace: Trace,
-        pub state: ProcState,
     }
 
-    /// Net surface syntax produces an ast-like structure
-    /// to represent an initial net.
-    ///
-    /// (to do -- surface syntax for all of the above net-internal
-    /// structure, and then we can write these more general net forms
-    /// too, e.g., to represent a net that we see live somewhere, or
-    /// the final form of a net, for behavioral tests)
-    pub enum Net {
-        Running(Sym, Exp),
-        Halted(Sym, Val),
-        Gather(Box<Net>, Box<Net>),
+    pub enum FrameCont {
+        Let(Pat, Exp),
+        App(Val),
+        Nest(Sym),
     }
 
-    /// Normalized net representation for stepping repeatedly.
-    pub struct NetNorm {
-        // lookup for a symbol involves finding the right trace
-        // fragment, for the right process.  The stack is consulted
-        // first, from top to bottom, then the non-stack trace here.
-        // This is not efficient; it is a Fumola "reference semantics".
-        // The purpose is to match the formal semantics as closely
-        // as we reasonably can in Rust, and provide some visuals later to
-        // permit non-formalists to gain a visual intuition for the formalism.
-        pub trace: std::collections::HashMap<Sym, Trace>,
-        pub proc: std::collections::HashMap<Sym, Process>,
-    }
 }

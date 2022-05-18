@@ -1,7 +1,24 @@
 use std::str::FromStr;
-use crate::ast::{Exp, Val, Pat, Id, Sym, step::Net};
+use crate::ast::{Exp, Val, Pat, Id, Sym, step::{Net, Trace, TraceNet}};
 
 grammar;
+
+pub TraceNet: TraceNet = {
+  <t:Trace> ";;" <n:Net> => TraceNet { trace:t, net:n }
+}
+
+pub Trace: Trace = {
+    <t1:TraceHd> ";" <t2:Trace> => Trace::Seq(vec![t1, t2]),
+    TraceHd
+}
+
+pub TraceHd: Trace = {
+    "ret" <v:Val> => Trace::Ret(v),
+    <s:Sym> ":=" <v:Val> => Trace::Put(s, v),
+    "@" <s:Sym> "=" <v:Val> => Trace::Get(s, v),
+    "&" <v:Val> "=" <s:Sym> => Trace::Link(v, s),
+    "#" <s:Sym> "{" <t:Trace> "}" => Trace::Nest(s, Box::new(t))
+}
 
 pub NetHd: Net = {
     "doing" <s:Sym> "{" <e:Exp> "}" => Net::Running(s, e),
@@ -66,6 +83,7 @@ pub Val: Val = {
     "$" <s:Sym> => Val::Sym(s),
     Id => Val::Var(<>),
     "{" <e:ExpBox> "}" => Val::Bx(e),
+    "!" <s:Sym> => Val::Ptr(s),
 };
 
 Num: i32 = {
@@ -102,3 +120,4 @@ pub SymHd: Sym = {
 pub SymHdBox: Box<Sym> = {
     SymHd => Box::new(<>),
 };
+
