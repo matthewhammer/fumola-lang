@@ -13,11 +13,12 @@ pub Trace: Trace = {
 }
 
 pub TraceHd: Trace = {
+    "proc" <s:Sym> "{" <t:Trace> "}" => Trace::Proc(s, Box::new(t)),
+    "nest" <s:Sym> "{" <t:Trace> "}" => Trace::Nest(s, Box::new(t)),
     "ret" <v:Val> => Trace::Ret(v),
-    <s:Sym> ":=" <v:Val> => Trace::Put(s, v),
-    "@" <s:Sym> "=" <v:Val> => Trace::Get(s, v),
-    "&" <v:Val> "=" <s:Sym> => Trace::Link(v, s),
-    "#" <s:Sym> "{" <t:Trace> "}" => Trace::Nest(s, Box::new(t))
+    "put" <s:Sym> "<=" <v:Val> => Trace::Put(s, v),
+    "get" <s:Sym> "=>" <v:Val> => Trace::Get(s, v),
+    "link" <v1:Val> "=>" <v2:Val> => Trace::Link(v1, v2),
 }
 
 pub NetHd: Net = {
@@ -84,6 +85,7 @@ pub Val: Val = {
     Id => Val::Var(<>),
     "{" <e:ExpBox> "}" => Val::Bx(e),
     "!" <s:Sym> => Val::Ptr(s),
+    "~" <s:Sym> => Val::Proc(s),
 };
 
 Num: i32 = {

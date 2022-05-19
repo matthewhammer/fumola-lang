@@ -30,6 +30,7 @@ pub enum Val {
     CallByValue(Box<Exp>),
     Sym(Sym),
     Ptr(Sym),
+    Proc(Sym),
     Var(Id),
     Num(i32),
     Variant(Box<Val>, Box<Val>),
@@ -138,12 +139,13 @@ pub mod step {
 
     #[derive(Debug)]
     pub enum Trace {
+        Proc(Sym, Box<Trace>),
         Seq(Vec<Trace>),
         Nest(Sym, Box<Trace>),
         Ret(Val),
         Put(Sym, Val),
         Get(Sym, Val),
-        Link(Val, Sym),
+        Link(Val, Val),
     }
 
     pub type Procs = std::collections::HashMap<Sym, Process>;

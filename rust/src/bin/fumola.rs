@@ -14,7 +14,7 @@ fn check_exp(input: &str, ast: &str) {
 
 fn check_net(initial: &str, halted: &str) {
     let initial = fumola::parser::NetParser::new().parse(initial).unwrap();
-    let halted = fumola::parser::TraceNetParser::new().parse(halted);
+    let halted = fumola::parser::TraceNetParser::new().parse(halted).unwrap();
     // to do -- run ast and check final config against halted
     println!("initial = {:?}", initial);
     println!("halted = {:?}", halted);
@@ -71,7 +71,15 @@ fn test_net_put_link_get() {
     // not sure about the "!" syntax for raw, global addresses.
     check_net(
         "doing a { $x := 137 } | doing b { @`(@`(&$a)) }",
-        "a { !a-x := 137 } ;; being a { !a-x } | being b { 137 }",
+        r##"
+        proc a { put a-x <= 137 };
+        proc b { link $a => ~a;
+                 get a => !a-x;
+                 get a-x => 137 }
+        ;;
+        being a { !a-x }
+      | being b { 137 }
+        "##,
     );
 }
 
