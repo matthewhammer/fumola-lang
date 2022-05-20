@@ -54,7 +54,12 @@ pub type Branches = Vec<Branch>;
 
 pub type FieldsPat = Vec<FieldPat>;
 
-pub type Cases = Vec<Case>;
+#[derive(Debug)]
+pub enum Cases {
+    Empty,
+    Gather(Box<Cases>, Box<Cases>),
+    Case(Case),
+}
 
 #[derive(Debug)]
 pub enum Sym {
@@ -182,5 +187,4 @@ pub mod step {
         App(Val),
         Nest(Sym),
     }
-
 }

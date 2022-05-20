@@ -42,6 +42,12 @@ fn test_nest() {
 }
 
 #[test]
+fn test_switch() {
+    check_exp("switch #$apple(1) { #$apple(x){ret x}; #$banana(x){ret x} }", 
+              "Switch(Variant(Sym(Id(\"apple\")), Num(1)), Gather(Case(Case { label: Sym(Id(\"apple\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) })))");
+}
+
+#[test]
 fn test_syms() {
     check_exp(
         "let _ = ret $1; let _ = ret $a; ret 0",

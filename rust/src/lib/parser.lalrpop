@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Exp, Val, Pat, Id, Sym, step::{Net, Trace, TraceNet}};
+use crate::ast::{Exp, Val, Pat, Id, Sym, Case, Cases, step::{Net, Trace, TraceNet}};
 
 grammar;
 
@@ -54,17 +54,29 @@ pub Exp: Exp = {
 };
 
 pub ExpHd: Exp = {
+    "switch" <v:Val> "{" <c:Cases> "}" => Exp::Switch(v, c),
     "\\" <p:Pat> "=>" <e:ExpBox> => Exp::Lambda(p, e),
     "#" <v:Val> "{" <e:ExpBox> "}" => Exp::Nest(v, e),
     <v1:Val> ":=" <v2:Val> => Exp::Put(v1, v2),
     "@" <v1:Val> => Exp::Get(v1),
     "&" <v1:Val> => Exp::Link(v1),
-    "assert_equal" <v1:Val> <v2:Val> => Exp::AssertEq(v1, true, v2),
+    "assert" <v1:Val> "==" <v2:Val> => Exp::AssertEq(v1, true, v2),
+    "assert" <v1:Val> "!=" <v2:Val> => Exp::AssertEq(v1, false, v2),
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
     "let box" <p:Pat> "=" <v:Val> ";" <e:ExpBox> => Exp::LetBx(p, v, e),
     "ret" <v:Val> => Exp::Ret(v),    
     Id => Exp::Extract(Val::Var(<>)),
     ExpApp,
+};
+
+pub Cases: Cases = {
+    <c:Case> ";" <cs:Cases> => Cases::Gather(Box::new(Cases::Case(c)), Box::new(cs)),
+    <c:Case> => Cases::Case(c),
+     => Cases::Empty
+}
+
+pub Case: Case = {
+    "#" <v:Val> "(" <p:Pat> ")" "{" <e:ExpBox> "}" => Case{label:v, pattern:p, body:e}
 };
 
 ExpApp: Exp = {
