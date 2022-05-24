@@ -7,9 +7,16 @@ use std::io;
 
 use fumola::error::OurResult;
 
-fn check_exp(input: &str, ast: &str) {
+fn check_exp_(input: &str, ast: Option<&str>) {
     let expr = fumola::parser::ExpParser::new().parse(input).unwrap();
-    assert_eq!(&format!("{:?}", expr), ast);
+    match ast {
+        None => println!("{:?}\ncheck_exp: Ok.", expr),
+        Some(a) => assert_eq!(&format!("{:?}", expr), a),
+    }
+}
+
+fn check_exp(input: &str, ast: &str) {
+    check_exp_(input, Some(ast))
 }
 
 fn check_net(initial: &str, halted: &str) {
@@ -61,17 +68,17 @@ fn test_syms() {
     );
 
     check_exp("let _ = ret $a-1; let _ = ret $a.1; ret 0",
-                    "Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Ret(Num(0))))");
+              "Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Ret(Num(0))))");
 
     check_exp("let _ = ret $a_1-b_2.c; ret 0",
-                    "Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))");
+              "Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))");
 }
 
 #[test]
 fn test_let_box() {
     // box f contains code that, when given a symbol and a value, puts the value at that symbol.
     check_exp("let box f = {\\x => \\y => x := y}; f $a 1",
-                    "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
+              "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
 }
 
 #[test]
@@ -123,6 +130,7 @@ pub enum CliCommand {
         about = "Generate shell scripts for auto-completions."
     )]
     Completions { shell: Shell },
+    Check { input: String },
 }
 
 fn init_log(level_filter: log::LevelFilter) {
@@ -148,6 +156,9 @@ fn main() -> OurResult<()> {
     );
     info!("Evaluating CLI command: {:?} ...", &cli_opt.command);
     let () = match cli_opt.command {
+        CliCommand::Check{ input: i } => {
+            check_exp_(i.as_str(), None)
+        }
         CliCommand::Completions { shell: s } => {
             // see also: https://clap.rs/effortless-auto-completion/
             CliOpt::clap().gen_completions_to("caniput", s, &mut io::stdout());
