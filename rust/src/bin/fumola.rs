@@ -14,7 +14,7 @@ fn check_exp_(input: &str, ast: Option<&str>) {
             println!("{:?}\ncheck_exp: Ok.", expr);
             let i = format!("{:?}", input);
             let o: String = format!("{:?}", expr);
-            println!("check_exp({}, {:?});", i, o);
+            println!("\ncheck_exp(\n\t{}, \n\t{:?}\n);", i, o);
         }
         Some(a) => assert_eq!(&format!("{:?}", expr), a),
     }
