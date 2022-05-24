@@ -50,7 +50,12 @@ pub struct ValField {
     pub value: Val,
 }
 
-pub type Branches = Vec<Branch>;
+#[derive(Debug)]
+pub enum Branches {
+    Empty,
+    Gather(Box<Branches>, Box<Branches>),
+    Branch(Branch),
+}
 
 pub type FieldsPat = Vec<FieldPat>;
 

@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Exp, Val, Pat, Id, Sym, Case, Cases, step::{Net, Trace, TraceNet}};
+use crate::ast::{Exp, Val, Pat, Id, Sym, Case, Cases, Branches, Branch, step::{Net, Trace, TraceNet}};
 
 grammar;
 
@@ -64,9 +64,20 @@ pub ExpHd: Exp = {
     "assert" <v1:Val> "!=" <v2:Val> => Exp::AssertEq(v1, false, v2),
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
     "let box" <p:Pat> "=" <v:Val> ";" <e:ExpBox> => Exp::LetBx(p, v, e),
-    "ret" <v:Val> => Exp::Ret(v),    
+    "ret" <v:Val> => Exp::Ret(v),
+    "{" <b:Branches> "}" => Exp::Branches(b),
     Id => Exp::Extract(Val::Var(<>)),
     ExpApp,
+};
+
+pub Branches: Branches = {
+    <b:Branch> ";" <bs:Branches> => Branches::Gather(Box::new(Branches::Branch(b)), Box::new(bs)),
+    <b:Branch> => Branches::Branch(b),
+     => Branches::Empty
+}
+
+pub Branch: Branch = {
+    <v:Val> "=>" <e:ExpBox> => Branch{label:v, body:e}
 };
 
 pub Cases: Cases = {

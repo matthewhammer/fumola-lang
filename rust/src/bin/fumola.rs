@@ -10,7 +10,12 @@ use fumola::error::OurResult;
 fn check_exp_(input: &str, ast: Option<&str>) {
     let expr = fumola::parser::ExpParser::new().parse(input).unwrap();
     match ast {
-        None => println!("{:?}\ncheck_exp: Ok.", expr),
+        None => {
+            println!("{:?}\ncheck_exp: Ok.", expr);
+            let i = format!("{:?}", input);
+            let o: String = format!("{:?}", expr);
+            println!("check_exp({}, {:?});", i, o);
+        }
         Some(a) => assert_eq!(&format!("{:?}", expr), a),
     }
 }
@@ -52,6 +57,16 @@ fn test_nest() {
 fn test_switch() {
     check_exp("switch #$apple(1) { #$apple(x){ret x}; #$banana(x){ret x} }",
               "Switch(Variant(Sym(Id(\"apple\")), Num(1)), Gather(Case(Case { label: Sym(Id(\"apple\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) })))");
+}
+
+#[test]
+fn test_branches() {
+    check_exp(
+        "{ $apple => ret 1 }",
+        "Branches(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }))",
+    );
+    check_exp("{ $apple => ret 1; $banana => \\x => ret x }", 
+              "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Id(\"x\"), Ret(Var(\"x\"))) })))");
 }
 
 #[test]
@@ -129,8 +144,12 @@ pub enum CliCommand {
         name = "completions",
         about = "Generate shell scripts for auto-completions."
     )]
-    Completions { shell: Shell },
-    Check { input: String },
+    Completions {
+        shell: Shell,
+    },
+    Check {
+        input: String,
+    },
 }
 
 fn init_log(level_filter: log::LevelFilter) {
@@ -156,8 +175,8 @@ fn main() -> OurResult<()> {
     );
     info!("Evaluating CLI command: {:?} ...", &cli_opt.command);
     let () = match cli_opt.command {
-        CliCommand::Check{ input: i } => {
-            check_exp_(i.as_str(), None)
+        CliCommand::Check { input: i } => {
+            check_exp_(i.as_str(), None);
         }
         CliCommand::Completions { shell: s } => {
             // see also: https://clap.rs/effortless-auto-completion/
