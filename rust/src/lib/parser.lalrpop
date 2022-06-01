@@ -31,7 +31,7 @@ pub NetHdBox: Box<Net> = {
 }
 
 pub Net: Net = {
-    <n1:NetHdBox> "|" <n2:NetBox> => Net::Gather(n1, n2),
+    <n1:NetHdBox> "||" <n2:NetBox> => Net::Gather(n1, n2),
     NetHd,
 }
 
@@ -65,8 +65,6 @@ pub ExpHd: Exp = {
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
     "let box" <p:Pat> "=" <v:Val> ";" <e:ExpBox> => Exp::LetBx(p, v, e),
     "ret" <v:Val> => Exp::Ret(v),
-    "{" <b:Branches> "}" => Exp::Branches(b),
-    Id => Exp::Extract(Val::Var(<>)),
     ExpApp,
 };
 
@@ -90,10 +88,16 @@ pub Case: Case = {
     "#" <v:Val> "(" <p:Pat> ")" "{" <e:ExpBox> "}" => Case{label:v, pattern:p, body:e}
 };
 
+ExpAppHd: Exp = {
+    "(" <e:Exp> ")" => e,
+    "{" <b:Branches> "}" => Exp::Branches(b),
+    Id => Exp::Extract(Val::Var(<>)),
+};
+
 ExpApp: Exp = {
-    "(" <e:ExpBox> ")" <v:Val> => Exp::App(e, v),
-    <i:Id> <v:Val> => Exp::App(Box::new(Exp::Extract(Val::Var(i))), v),
+    <e:ExpApp> "<=" <v:Val> => Exp::Project(Box::new(e), v),
     <e:ExpApp> <v:Val> => Exp::App(Box::new(e), v),
+    ExpAppHd,
 };
 
 pub ValBox: Box<Val> = {
@@ -145,4 +149,3 @@ pub SymHd: Sym = {
 pub SymHdBox: Box<Sym> = {
     SymHd => Box::new(<>),
 };
-

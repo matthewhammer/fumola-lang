@@ -13,7 +13,7 @@ fn check_exp_(input: &str, ast: Option<&str>) {
         None => {
             println!("{:?}\ncheck_exp: Ok.", expr);
             let i = format!("{:?}", input);
-            let o: String = format!("{:?}", expr);
+            let o = format!("{:?}", expr);
             println!("\ncheck_exp(\n\t{}, \n\t{:?}\n);", i, o);
         }
         Some(a) => assert_eq!(&format!("{:?}", expr), a),
@@ -67,6 +67,10 @@ fn test_branches() {
     );
     check_exp("{ $apple => ret 1; $banana => \\x => ret x }", 
               "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Id(\"x\"), Ret(Var(\"x\"))) })))");
+    check_exp(
+	      "{ $apple => ret 1; $banana => \\x => x := x } <= $apple",
+	      "Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Id(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"
+    );
 }
 
 #[test]
@@ -104,15 +108,15 @@ fn test_net_put_link_get() {
 
     // not sure about the "!" syntax for raw, global addresses.
     check_net(
-        "doing a { $x := 137 } | doing b { @`(@`(&$a)) }",
+        "doing a { $x := 137 } || doing b { @`(@`(&$a)) }",
         r##"
         proc a { put a-x <= 137 };
         proc b { link $a => ~a;
                  get a => !a-x;
                  get a-x => 137 }
         ;;
-        being a { !a-x }
-      | being b { 137 }
+         being a { !a-x }
+      || being b { 137 }
         "##,
     );
 }
