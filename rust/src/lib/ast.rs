@@ -140,11 +140,11 @@ pub mod step {
         pub net: Net,
     }
 
-    /// Trace-Net representation for stepping repeatedly.
+    /// System representation for stepping repeatedly.
     /// Compared with TraceNet, uses Procs in place of Net.
-    pub struct TraceNetStep {
+    pub struct System {
         pub trace: Trace,
-        pub proc: Procs,
+        pub procs: Procs,
     }
 
     #[derive(Debug)]
@@ -168,25 +168,41 @@ pub mod step {
 
     pub type Store = std::collections::HashMap<Sym, Val>;
 
+    #[derive(Debug)]
+    pub enum Error {
+        /// No stepping rule applies.
+        /// Dynamically-determined type mismatch.
+        NoStep,
+        /// Duplicate process name.
+        /// It is an error to name a spawned process a non-uniquely.
+        Duplicate(Sym),
+    }
+
+    #[derive(Debug)]
     pub enum ProcState {
         Running(Running),
+        Error(Running, Error),
         Halted(Halted),
     }
 
+    #[derive(Debug)]
     pub struct Running {
         pub stack: Vec<Frame>,
         pub cont: Exp,
     }
 
+    #[derive(Debug)]
     pub struct Halted {
         pub retval: Val,
     }
 
+    #[derive(Debug)]
     pub struct Frame {
         pub cont: FrameCont,
         pub trace: Trace,
     }
 
+    #[derive(Debug)]
     pub enum FrameCont {
         Let(Pat, Exp),
         App(Val),
