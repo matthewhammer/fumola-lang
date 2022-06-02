@@ -1,6 +1,6 @@
 pub type Span = std::ops::Range<usize>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Exp {
     Nest(Val, Box<Exp>),
     Put(Val, Val),
@@ -22,7 +22,7 @@ pub enum Exp {
     Var(Id),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Val {
     /// The special CBV value form permits us to inject expression syntax into
     /// value syntax, deviating from CBPV. We restore CBPV before
@@ -44,13 +44,13 @@ pub type Id = String;
 
 pub type RecordVal = Vec<ValField>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ValField {
     pub label: Val,
     pub value: Val,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Branches {
     Empty,
     Gather(Box<Branches>, Box<Branches>),
@@ -59,14 +59,14 @@ pub enum Branches {
 
 pub type FieldsPat = Vec<FieldPat>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Cases {
     Empty,
     Gather(Box<Cases>, Box<Cases>),
     Case(Case),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Sym {
     Num(i32),
     Id(Id),
@@ -78,7 +78,7 @@ pub enum Sym {
     Tick,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Pat {
     Ignore,
     Id(Id),
@@ -86,26 +86,26 @@ pub enum Pat {
     Case(Box<FieldPat>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FieldPat {
     pub label: Val,
     pub pattern: Pat,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Branch {
     pub label: Val,
     pub body: Box<Exp>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Case {
     pub label: Val,
     pub pattern: Pat,
     pub body: Box<Exp>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinOp {
     Mul,
     Div,
@@ -143,6 +143,7 @@ pub mod step {
     /// System representation for stepping repeatedly.
     /// Compared with TraceNet, uses Procs in place of Net.
     pub struct System {
+        pub store: Store, 
         pub trace: Trace,
         pub procs: Procs,
     }
@@ -158,13 +159,7 @@ pub mod step {
         Link(Val, Val),
     }
 
-    pub type Procs = std::collections::HashMap<Sym, Process>;
-
-    pub struct Process {
-        pub store: Store,
-        pub trace: Trace,
-        pub state: ProcState,
-    }
+    pub type Procs = std::collections::HashMap<Sym, Proc>;
 
     pub type Store = std::collections::HashMap<Sym, Val>;
 
@@ -179,7 +174,7 @@ pub mod step {
     }
 
     #[derive(Debug)]
-    pub enum ProcState {
+    pub enum Proc {
         Running(Running),
         Error(Running, Error),
         Halted(Halted),
@@ -191,7 +186,7 @@ pub mod step {
         pub cont: Exp,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Halted {
         pub retval: Val,
     }
