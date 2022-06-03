@@ -116,7 +116,7 @@ pub enum BinOp {
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
-    use super::{Exp, Pat, Sym, Val};
+    use super::{Exp, Id, Pat, Sym, Val};
 
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.
@@ -143,12 +143,12 @@ pub mod step {
     /// System representation for stepping repeatedly.
     /// Compared with TraceNet, uses Procs in place of Net.
     pub struct System {
-        pub store: Store, 
+        pub store: Store,
         pub trace: Trace,
         pub procs: Procs,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum Trace {
         Proc(Sym, Box<Trace>),
         Seq(Vec<Trace>),
@@ -163,25 +163,44 @@ pub mod step {
 
     pub type Store = std::collections::HashMap<Sym, Val>;
 
-    #[derive(Debug)]
+    pub type Env = std::collections::HashMap<Id, Val>;
+
+    impl std::convert::From<ValueError> for Error {
+        fn from(ve: ValueError) -> Self {
+            Error::Value(ve)
+        }
+    }
+
+    #[derive(Debug, Clone)]
     pub enum Error {
+        /// Value-closing error.
+        Value(ValueError),
+
         /// No stepping rule applies.
         /// Dynamically-determined type mismatch.
         NoStep,
+
         /// Duplicate process name.
         /// It is an error to name a spawned process a non-uniquely.
         Duplicate(Sym),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
+    pub enum ValueError {
+        CallByValue,
+        Undefined(Id),
+    }
+
+    #[derive(Debug, Clone)]
     pub enum Proc {
         Running(Running),
         Error(Running, Error),
         Halted(Halted),
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Running {
+        pub env: Env,
         pub stack: Vec<Frame>,
         pub cont: Exp,
     }
@@ -191,13 +210,13 @@ pub mod step {
         pub retval: Val,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Frame {
         pub cont: FrameCont,
         pub trace: Trace,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum FrameCont {
         Let(Pat, Exp),
         App(Val),
