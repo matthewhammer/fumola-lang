@@ -76,12 +76,12 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             } else {
                 let fr = r.stack.pop().ok_or(Error::Impossible)?;
                 match fr.cont {
+                    FrameCont::App(v) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
                         let tr = std::mem::replace(&mut r.trace, fr.trace);
                         r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
                         Ok(())
                     }
-                    FrameCont::App(v) => Err(Error::NoStep),
                     FrameCont::Let(p, e) => {
                         pattern(&mut r.env, &p, v)?;
                         let _ = std::mem::replace(&mut r.cont, e);
@@ -89,7 +89,6 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
                         r.trace.append(&mut tr);
                         Ok(())
                     }
-                    _ => unimplemented!(),
                 }
             }
         }
@@ -105,16 +104,28 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             }
             _ => Err(Error::NoStep),
         },
+        // ## TO DO
+        // Put(Val, Val),
+        // Get(Val),
+        // Link(Val),
+        // AssertEq(Val, bool, Val),
+        // Lambda(Pat, Box<Exp>),
+        // App(Box<Exp>, Val),
+        // Let(Pat, Box<Exp>, Box<Exp>),
+        // Switch(Val, Cases),
+        // Branches(Branches),
+        // Project(Box<Exp>, Val),
+        // LetBx(Pat, Val, Box<Exp>),
+        // Extract(Val),
         _ => unimplemented!(),
     }
 }
 
 pub fn system(sys: &mut System) {
     unimplemented!()
-    // loop over procs
-    // for each proc, step it once.
-    // if it steps, update the system.
-    // if not, do not update the system for the step.
+    // loop:
+    // each round: for each proc, attempt to step it once.
+    // if any proc steps, continue for another round; otherwise, end.
 }
 
 #[derive(Debug)]

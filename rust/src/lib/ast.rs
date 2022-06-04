@@ -18,8 +18,6 @@ pub enum Exp {
     LetBx(Pat, Val, Box<Exp>),
     /// explicit "extract" rather than implicit as in https://arxiv.org/abs/1703.01288
     Extract(Val),
-    BinOp(Box<Exp>, BinOp, Box<Exp>),
-    Var(Id),
 }
 
 #[derive(Debug, Clone)]
