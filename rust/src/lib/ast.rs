@@ -34,7 +34,7 @@ pub enum Val {
     Var(Id),
     Num(i32),
     Variant(Box<Val>, Box<Val>),
-    Record(Box<RecordVal>),
+    Record(RecordVal),
     RecordExt(Box<Val>, Box<ValField>),
     /// "Code box" as in https://arxiv.org/abs/1703.01288
     Bx(Box<Exp>),
@@ -166,13 +166,30 @@ pub mod step {
     pub type Env = std::collections::HashMap<Id, Val>;
 
     impl std::convert::From<ValueError> for Error {
-        fn from(ve: ValueError) -> Self {
-            Error::Value(ve)
+        fn from(e: ValueError) -> Self {
+            Error::Value(e)
+        }
+    }
+
+    impl std::convert::From<PatternError> for Error {
+        fn from(e: PatternError) -> Self {
+            Error::Pattern(e)
         }
     }
 
     #[derive(Debug, Clone)]
     pub enum Error {
+        /// Signal (successful) halting state, with value.
+        /// Not an error, but not ordinary stepping either.
+        SignalHalt(Val),
+
+        /// Logically-impossible error.
+        /// (but Rust type system cannot disprove.)
+        Impossible,
+
+        /// Value-closing error.
+        Pattern(PatternError),
+
         /// Value-closing error.
         Value(ValueError),
 
@@ -192,6 +209,12 @@ pub mod step {
     }
 
     #[derive(Debug, Clone)]
+    pub enum PatternError {
+        NotVariant,
+        NotRecord,
+    }
+
+    #[derive(Debug, Clone)]
     pub enum Proc {
         Running(Running),
         Error(Running, Error),
@@ -203,6 +226,7 @@ pub mod step {
         pub env: Env,
         pub stack: Vec<Frame>,
         pub cont: Exp,
+        pub trace: Vec<Trace>,
     }
 
     #[derive(Debug, Clone)]
@@ -213,7 +237,7 @@ pub mod step {
     #[derive(Debug, Clone)]
     pub struct Frame {
         pub cont: FrameCont,
-        pub trace: Trace,
+        pub trace: Vec<Trace>,
     }
 
     #[derive(Debug, Clone)]

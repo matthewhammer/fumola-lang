@@ -1,18 +1,21 @@
 use crate::ast::{
-    step::{Env, Error, Proc, Running, System, ValueError},
-    Exp, Sym, Val, ValField,
+    step::{Env, Error, Frame, FrameCont, PatternError, Proc, Running, System, Trace, ValueError},
+    Exp, Pat, Sym, Val, ValField,
 };
 
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
-pub fn proc(proc: &Proc) -> Option<Proc> {
+pub fn proc(proc: &mut Proc) -> Result<(), ()> {
     use Proc::*;
     match proc {
-        Error(_, _) => None,
-        Halted(_) => None,
+        Error(_, _) => Err(()),
+        Halted(_) => Err(()),
         Running(r) => match running(r) {
-            Ok(proc) => Some(proc),
-            Err(err) => Some(Error(r.clone(), err)),
+            Ok(()) => Ok(()),
+            Err(err) => {
+                *proc = Error(r.clone(), err);
+                Ok(())
+            }
         },
     }
 }
@@ -24,6 +27,14 @@ pub fn value_field(env: &Env, value_field: &ValField) -> Result<ValField, ValueE
 pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
     use Val::*;
     match v {
+        Sym(_) => Ok(v.clone()),
+        Ptr(_) => Ok(v.clone()),
+        Proc(_) => Ok(v.clone()),
+        Num(_) => Ok(v.clone()),
+        Variant(v1, v2) => Ok(Variant(
+            Box::new(value(env, v1)?),
+            Box::new(value(env, v2)?),
+        )),
         Var(x) => match env.get(x) {
             Some(v) => Ok(v.clone()),
             None => Err(ValueError::Undefined(x.clone())),
@@ -33,28 +44,67 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
             Box::new(value(env, v1)?),
             Box::new(value_field(env, vf)?),
         )),
+        Record(fs) => {
+            let mut v = vec![];
+            for r in fs
+                .iter()
+                .map(|vf: &ValField| -> Result<ValField, ValueError> { value_field(env, vf) })
+            {
+                v.push(r?)
+            }
+            Ok(Record(v))
+        }
         CallByValue(_) => Err(ValueError::CallByValue),
-        _ => unimplemented!(),
     }
+}
+
+pub fn pattern(env: &mut Env, p: &Pat, v: Val) -> Result<(), PatternError> {
+    unimplemented!()
 }
 
 /// step a running process.
 /// returns None if already Blocked.
-pub fn running(r: &Running) -> Result<Proc, Error> {
+pub fn running(r: &mut Running) -> Result<(), Error> {
     // for each Exp form, step it, possibly to an Error.
     use Exp::*;
     use Val::*;
     match &r.cont {
-        Nest(v, e) => {
-            match value(&r.env, &v)? {
-                Sym(s) => {
-                    unimplemented!()
-                    // push stack with `nest s`
-                    // continue with body of nest.
+        Ret(v) => {
+            let v = value(&r.env, &v)?;
+            if r.stack.len() == 0 {
+                Err(Error::SignalHalt(v))
+            } else {
+                let fr = r.stack.pop().ok_or(Error::Impossible)?;
+                match fr.cont {
+                    FrameCont::Nest(s) => {
+                        let tr = std::mem::replace(&mut r.trace, fr.trace);
+                        r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
+                        Ok(())
+                    }
+                    FrameCont::App(v) => Err(Error::NoStep),
+                    FrameCont::Let(p, e) => {
+                        pattern(&mut r.env, &p, v)?;
+                        let _ = std::mem::replace(&mut r.cont, e);
+                        let mut tr = std::mem::replace(&mut r.trace, fr.trace);
+                        r.trace.append(&mut tr);
+                        Ok(())
+                    }
+                    _ => unimplemented!(),
                 }
-                _ => Err(Error::NoStep),
             }
         }
+        Nest(v, e) => match value(&r.env, &v)? {
+            Sym(s) => {
+                let trace = std::mem::replace(&mut r.trace, vec![]);
+                r.stack.push(Frame {
+                    cont: FrameCont::Nest(s),
+                    trace,
+                });
+                r.cont = *e.clone();
+                Ok(())
+            }
+            _ => Err(Error::NoStep),
+        },
         _ => unimplemented!(),
     }
 }
