@@ -18,6 +18,7 @@ pub enum Exp {
     LetBx(Pat, Val, Box<Exp>),
     /// explicit "extract" rather than implicit as in https://arxiv.org/abs/1703.01288
     Extract(Val),
+    Hole,
 }
 
 #[derive(Debug, Clone)]
@@ -240,7 +241,7 @@ pub mod step {
 
     #[derive(Debug, Clone)]
     pub enum FrameCont {
-        Let(Pat, Exp),
+        Let(Env, Pat, Exp),
         App(Val),
         Nest(Sym),
     }

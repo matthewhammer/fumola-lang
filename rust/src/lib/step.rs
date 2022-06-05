@@ -58,7 +58,9 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
     }
 }
 
-pub fn pattern(env: &mut Env, p: &Pat, v: Val) -> Result<(), PatternError> {
+/// Try to match closed value against pattern.
+/// Updates the environment for each pattern-identifier match, even if pattern error.
+pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
     unimplemented!()
 }
 
@@ -66,9 +68,12 @@ pub fn pattern(env: &mut Env, p: &Pat, v: Val) -> Result<(), PatternError> {
 /// returns None if already Blocked.
 pub fn running(r: &mut Running) -> Result<(), Error> {
     // for each Exp form, step it, possibly to an Error.
+    use std::mem::replace;
     use Exp::*;
     use Val::*;
-    match &r.cont {
+    let mut cont = replace(&mut r.cont, Hole);
+    match cont {
+        Hole => Err(Error::NoStep),
         Ret(v) => {
             let v = value(&r.env, &v)?;
             if r.stack.len() == 0 {
@@ -78,15 +83,16 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
                 match fr.cont {
                     FrameCont::App(v) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
-                        let tr = std::mem::replace(&mut r.trace, fr.trace);
+                        let tr = replace(&mut r.trace, fr.trace);
                         r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
                         Ok(())
                     }
-                    FrameCont::Let(p, e) => {
-                        pattern(&mut r.env, &p, v)?;
-                        let _ = std::mem::replace(&mut r.cont, e);
-                        let mut tr = std::mem::replace(&mut r.trace, fr.trace);
+                    FrameCont::Let(env0, pat, e1) => {
+                        let _ = replace(&mut r.env, env0);
+                        let _ = replace(&mut r.cont, e1);
+                        let mut tr = replace(&mut r.trace, fr.trace);
                         r.trace.append(&mut tr);
+                        pattern(&pat, v, &mut r.env)?;
                         Ok(())
                     }
                 }
@@ -99,24 +105,36 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
                     cont: FrameCont::Nest(s),
                     trace,
                 });
-                r.cont = *e.clone();
+                r.cont = *e;
                 Ok(())
             }
             _ => Err(Error::NoStep),
         },
-        // ## TO DO
+        Let(pat, e1, e2) => {
+            let trace = std::mem::replace(&mut r.trace, vec![]);
+            r.stack.push(Frame {
+                cont: FrameCont::Let(r.env.clone(), pat, *e2),
+                trace,
+            });
+            r.cont = *e1;
+            Ok(())
+        }
+        // LetBx(Pat, Val, Box<Exp>),
+
+        // Extract(Val),
+
+        // Lambda(Pat, Box<Exp>),
+        // App(Box<Exp>, Val),
+
+        // Project(Box<Exp>, Val),
+        // Branches(Branches),
+
         // Put(Val, Val),
         // Get(Val),
         // Link(Val),
         // AssertEq(Val, bool, Val),
-        // Lambda(Pat, Box<Exp>),
-        // App(Box<Exp>, Val),
-        // Let(Pat, Box<Exp>, Box<Exp>),
+
         // Switch(Val, Cases),
-        // Branches(Branches),
-        // Project(Box<Exp>, Val),
-        // LetBx(Pat, Val, Box<Exp>),
-        // Extract(Val),
         _ => unimplemented!(),
     }
 }
