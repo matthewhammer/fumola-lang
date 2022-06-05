@@ -1,6 +1,6 @@
 use crate::ast::{
     step::{Env, Error, Frame, FrameCont, PatternError, Proc, Running, System, Trace, ValueError},
-    Exp, Pat, Sym, Val, ValField,
+    Exp, Pat, Sym, Val, ValField, BxVal
 };
 
 /// step a process.
@@ -35,7 +35,7 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
             Box::new(value(env, v1)?),
             Box::new(value(env, v2)?),
         )),
-        Var(x) => match env.get(x) {
+        Var(x) => match env.vals.get(x) {
             Some(v) => Ok(v.clone()),
             None => Err(ValueError::Undefined(x.clone())),
         },

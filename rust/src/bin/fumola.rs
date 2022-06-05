@@ -97,7 +97,7 @@ fn test_syms() {
 fn test_let_box() {
     // box f contains code that, when given a symbol and a value, puts the value at that symbol.
     check_exp("let box f = {\\x => \\y => x := y}; f $a 1",
-              "LetBx(Id(\"f\"), Bx(Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\"))))), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
+              "LetBx(Id(\"f\"), Bx(BxVal { name: None, body: Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\")))) }), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))");
 }
 
 #[test]

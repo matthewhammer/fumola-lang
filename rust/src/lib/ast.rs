@@ -14,9 +14,7 @@ pub enum Exp {
     Switch(Val, Cases),
     Branches(Branches),
     Project(Box<Exp>, Val),
-    /// "Let box", as in https://arxiv.org/abs/1703.01288
     LetBx(Pat, Val, Box<Exp>),
-    /// explicit "extract" rather than implicit as in https://arxiv.org/abs/1703.01288
     Extract(Val),
     Hole,
 }
@@ -35,8 +33,14 @@ pub enum Val {
     Variant(Box<Val>, Box<Val>),
     Record(RecordVal),
     RecordExt(Box<Val>, Box<ValField>),
-    /// "Code box" as in https://arxiv.org/abs/1703.01288
-    Bx(Box<Exp>),
+    Bx(Box<BxVal>),
+}
+
+/// "Code box" as in https://arxiv.org/abs/1703.01288
+#[derive(Debug, Clone)]
+pub struct BxVal {
+    pub name: Option<Id>,
+    pub body: Exp
 }
 
 pub type Id = String;
@@ -115,7 +119,7 @@ pub enum BinOp {
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
-    use super::{Exp, Id, Pat, Sym, Val};
+    use super::{Exp, Id, Pat, Sym, Val, BxVal};
 
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.
@@ -162,7 +166,11 @@ pub mod step {
 
     pub type Store = std::collections::HashMap<Sym, Val>;
 
-    pub type Env = std::collections::HashMap<Id, Val>;
+    #[derive(Debug, Clone)]
+    pub struct Env {
+        pub vals: std::collections::HashMap<Id, Val>,
+        pub bxes: std::collections::HashMap<Id, BxVal>
+    }
 
     impl std::convert::From<ValueError> for Error {
         fn from(e: ValueError) -> Self {
