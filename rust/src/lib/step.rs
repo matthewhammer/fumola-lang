@@ -1,7 +1,12 @@
 use crate::ast::{
-    step::{Env, Error, Frame, FrameCont, PatternError, Proc, Running, System, Trace, ValueError},
+    step::{
+        Env, Error, ExtractError, Frame, FrameCont, PatternError, Proc, Running, System, Trace,
+        ValueError,
+    },
     BxVal, Exp, Pat, Sym, Val, ValField,
 };
+
+use std::collections::HashMap;
 
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
@@ -113,7 +118,7 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
         }
         Nest(v, e) => match value(&r.env, &v)? {
             Sym(s) => {
-                let trace = std::mem::replace(&mut r.trace, vec![]);
+                let trace = replace(&mut r.trace, vec![]);
                 r.stack.push(Frame {
                     cont: FrameCont::Nest(s),
                     trace,
@@ -124,7 +129,7 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             _ => Err(Error::NoStep),
         },
         Let(pat, e1, e2) => {
-            let trace = std::mem::replace(&mut r.trace, vec![]);
+            let trace = replace(&mut r.trace, vec![]);
             r.stack.push(Frame {
                 cont: FrameCont::Let(r.env.clone(), pat, *e2),
                 trace,
@@ -133,7 +138,7 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             Ok(())
         }
         LetBx(Pat::Id(x), e1, e2) => {
-            let trace = std::mem::replace(&mut r.trace, vec![]);
+            let trace = replace(&mut r.trace, vec![]);
             r.stack.push(Frame {
                 cont: FrameCont::LetBx(r.env.clone(), Pat::Id(x), *e2),
                 trace,
@@ -142,10 +147,25 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             Ok(())
         }
         LetBx(_, e1, e2) => unimplemented!(),
+        Extract(Var(x)) => {
+            let bx = r
+                .env
+                .bxes
+                .get(&x)
+                .ok_or(Error::Extract(ExtractError::Undefined(x)))?
+                .clone();
+            r.env.vals = HashMap::new();
+            if let Some(name) = bx.name.clone() {
+                drop(r.env.vals.insert(name, Bx(Box::new(bx.clone()))))
+            }
+            r.env.bxes = bx.bxes;
+            r.cont = bx.code;
+            Ok(())
+        }
+        Extract(_) => unimplemented!(),
 
-        // LetBx(Pat, Val, Box<Exp>),
-
-        // Extract(Val),
+        // To do
+        // ------
 
         // Lambda(Pat, Box<Exp>),
         // App(Box<Exp>, Val),

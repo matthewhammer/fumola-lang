@@ -19,6 +19,8 @@ pub enum Exp {
     Hole,
 }
 
+pub type BxesEnv = std::collections::HashMap<Id, BxVal>;
+
 #[derive(Debug, Clone)]
 pub enum Val {
     /// The special CBV value form permits us to inject expression syntax into
@@ -39,8 +41,9 @@ pub enum Val {
 /// "Code box" as in https://arxiv.org/abs/1703.01288
 #[derive(Debug, Clone)]
 pub struct BxVal {
+    pub bxes: BxesEnv,
     pub name: Option<Id>,
-    pub body: Exp,
+    pub code: Exp,
 }
 
 pub type Id = String;
@@ -119,7 +122,7 @@ pub enum BinOp {
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
-    use super::{BxVal, Exp, Id, Pat, Sym, Val};
+    use super::{BxVal, BxesEnv, Exp, Id, Pat, Sym, Val};
 
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.
@@ -166,10 +169,12 @@ pub mod step {
 
     pub type Store = std::collections::HashMap<Sym, Val>;
 
+    pub type ValsEnv = std::collections::HashMap<Id, Val>;
+
     #[derive(Debug, Clone)]
     pub struct Env {
-        pub vals: std::collections::HashMap<Id, Val>,
-        pub bxes: std::collections::HashMap<Id, BxVal>,
+        pub vals: ValsEnv,
+        pub bxes: BxesEnv,
     }
 
     impl std::convert::From<ValueError> for Error {
@@ -194,11 +199,14 @@ pub mod step {
         /// (but Rust type system cannot disprove.)
         Impossible,
 
-        /// Value-closing error.
+        /// Pattern matching error.
         Pattern(PatternError),
 
-        /// Value-closing error.
+        /// Value closing error.
         Value(ValueError),
+
+        /// Code extraction error.
+        Extract(ExtractError),
 
         /// No stepping rule applies.
         /// Dynamically-determined type mismatch.
@@ -219,6 +227,11 @@ pub mod step {
     pub enum PatternError {
         NotVariant,
         NotRecord,
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum ExtractError {
+        Undefined(Id),
     }
 
     #[derive(Debug, Clone)]

@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::collections::HashMap;
 use crate::ast::{Exp, Val, Pat, Id, Sym, Case, Cases, Branches, Branch, BxVal, step::{Net, Trace, TraceNet}};
 
 grammar;
@@ -117,7 +118,7 @@ pub Val: Val = {
 };
 
 pub BxVal: Val = {
-   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{name:None, body:e}))
+   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:None, code:e}))
 }
 
 Num: i32 = {
