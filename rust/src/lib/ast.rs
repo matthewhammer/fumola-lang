@@ -14,7 +14,7 @@ pub enum Exp {
     Switch(Val, Cases),
     Branches(Branches),
     Project(Box<Exp>, Val),
-    LetBx(Pat, Val, Box<Exp>),
+    LetBx(Pat, Box<Exp>, Box<Exp>),
     Extract(Val),
     Hole,
 }
@@ -40,7 +40,7 @@ pub enum Val {
 #[derive(Debug, Clone)]
 pub struct BxVal {
     pub name: Option<Id>,
-    pub body: Exp
+    pub body: Exp,
 }
 
 pub type Id = String;
@@ -119,7 +119,7 @@ pub enum BinOp {
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
-    use super::{Exp, Id, Pat, Sym, Val, BxVal};
+    use super::{BxVal, Exp, Id, Pat, Sym, Val};
 
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.
@@ -169,7 +169,7 @@ pub mod step {
     #[derive(Debug, Clone)]
     pub struct Env {
         pub vals: std::collections::HashMap<Id, Val>,
-        pub bxes: std::collections::HashMap<Id, BxVal>
+        pub bxes: std::collections::HashMap<Id, BxVal>,
     }
 
     impl std::convert::From<ValueError> for Error {
@@ -249,6 +249,7 @@ pub mod step {
 
     #[derive(Debug, Clone)]
     pub enum FrameCont {
+        LetBx(Env, Pat, Exp),
         Let(Env, Pat, Exp),
         App(Val),
         Nest(Sym),

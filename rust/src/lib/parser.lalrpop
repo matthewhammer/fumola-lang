@@ -63,7 +63,8 @@ pub ExpHd: Exp = {
     "assert" <v1:Val> "==" <v2:Val> => Exp::AssertEq(v1, true, v2),
     "assert" <v1:Val> "!=" <v2:Val> => Exp::AssertEq(v1, false, v2),
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
-    "let box" <p:Pat> "=" <v:Val> ";" <e:ExpBox> => Exp::LetBx(p, v, e),
+    "let box" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::LetBx(p, e1, e2),
+    "let box" <p:Pat> "=" <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
     "ret" <v:Val> => Exp::Ret(v),
     ExpApp,
 };
@@ -110,10 +111,14 @@ pub Val: Val = {
     "`" "(" <e:ExpBox> ")" => Val::CallByValue(e),
     "$" <s:Sym> => Val::Sym(s),
     Id => Val::Var(<>),
-    "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{name:None, body:e})),
     "!" <s:Sym> => Val::Ptr(s),
     "~" <s:Sym> => Val::Proc(s),
+    BxVal,
 };
+
+pub BxVal: Val = {
+   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{name:None, body:e}))
+}
 
 Num: i32 = {
     r"[0-9]+" => i32::from_str(<>).unwrap()

@@ -1,6 +1,6 @@
 use crate::ast::{
     step::{Env, Error, Frame, FrameCont, PatternError, Proc, Running, System, Trace, ValueError},
-    Exp, Pat, Sym, Val, ValField, BxVal
+    BxVal, Exp, Pat, Sym, Val, ValField,
 };
 
 /// step a process.
@@ -87,14 +87,27 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
                         r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
                         Ok(())
                     }
-                    FrameCont::Let(env0, pat, e1) => {
+                    FrameCont::Let(mut env0, pat, e1) => {
+                        pattern(&pat, v, &mut env0)?;
                         let _ = replace(&mut r.env, env0);
                         let _ = replace(&mut r.cont, e1);
                         let mut tr = replace(&mut r.trace, fr.trace);
                         r.trace.append(&mut tr);
-                        pattern(&pat, v, &mut r.env)?;
                         Ok(())
                     }
+                    FrameCont::LetBx(env0, Pat::Id(x), e1) => {
+                        if let Bx(bv) = v {
+                            let _ = replace(&mut r.env, env0);
+                            let _ = replace(&mut r.cont, e1);
+                            let mut tr = replace(&mut r.trace, fr.trace);
+                            r.trace.append(&mut tr);
+                            r.env.bxes.insert(x, *bv);
+                            Ok(())
+                        } else {
+                            Err(Error::NoStep)
+                        }
+                    }
+                    FrameCont::LetBx(_, _, _) => unimplemented!(),
                 }
             }
         }
@@ -119,6 +132,17 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             r.cont = *e1;
             Ok(())
         }
+        LetBx(Pat::Id(x), e1, e2) => {
+            let trace = std::mem::replace(&mut r.trace, vec![]);
+            r.stack.push(Frame {
+                cont: FrameCont::LetBx(r.env.clone(), Pat::Id(x), *e2),
+                trace,
+            });
+            r.cont = *e1;
+            Ok(())
+        }
+        LetBx(_, e1, e2) => unimplemented!(),
+
         // LetBx(Pat, Val, Box<Exp>),
 
         // Extract(Val),
