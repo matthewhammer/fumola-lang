@@ -1,7 +1,7 @@
 use crate::ast::{
     step::{
-        Env, Error, ExtractError, Frame, FrameCont, PatternError, Proc, Running, System, Trace,
-        ValueError,
+        Env, Error, ExtractError, Frame, FrameCont, Halted, PatternError, Proc, Running, System,
+        Trace, ValueError,
     },
     BxVal, Exp, Pat, Sym, Val, ValField,
 };
@@ -11,14 +11,39 @@ use std::collections::HashMap;
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
 pub fn proc(proc: &mut Proc) -> Result<(), ()> {
-    use Proc::*;
-    match proc {
-        Error(_, _) => Err(()),
-        Halted(_) => Err(()),
-        Running(r) => match running(r) {
-            Ok(()) => Ok(()),
+    let pr = std::mem::replace(proc, Proc::Spawn(Exp::Hole));
+    match pr {
+        Proc::Error(_, _) => {
+            *proc = pr;
+            Err(())
+        }
+        Proc::Halted(_) => {
+            *proc = pr;
+            Err(())
+        }
+        Proc::Spawn(mut e) => {
+            *proc = Proc::Running(Running {
+                env: Env {
+                    vals: HashMap::new(),
+                    bxes: HashMap::new(),
+                },
+                stack: vec![],
+                cont: e,
+                trace: vec![],
+            });
+            Ok(())
+        }
+        Proc::Running(mut r) => match running(&mut r) {
+            Ok(()) => {
+                *proc = Proc::Running(r);
+                Ok(())
+            }
+            Err(Error::SignalHalt(v)) => {
+                *proc = Proc::Halted(Halted { retval: v });
+                Ok(())
+            }
             Err(err) => {
-                *proc = Error(r.clone(), err);
+                *proc = Proc::Error(r.clone(), err);
                 Ok(())
             }
         },
@@ -66,7 +91,13 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
 /// Try to match closed value against pattern.
 /// Updates the environment for each pattern-identifier match, even if pattern error.
 pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
-    unimplemented!()
+    match p {
+        Pat::Var(x) => {
+            env.vals.insert(x.clone(), v);
+            Ok(())
+        }
+        _ => unimplemented!(),
+    }
 }
 
 /// step a running process.
@@ -77,8 +108,9 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
     use Exp::*;
     use Val::*;
     let mut cont = replace(&mut r.cont, Hole);
+    //println!("running({{cont = {:?}, ...}})", cont);
     match cont {
-        Hole => Err(Error::NoStep),
+        Hole => Err(Error::Hole),
         Ret(v) => {
             let v = value(&r.env, &v)?;
             if r.stack.len() == 0 {
@@ -100,7 +132,7 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
                         r.trace.append(&mut tr);
                         Ok(())
                     }
-                    FrameCont::LetBx(env0, Pat::Id(x), e1) => {
+                    FrameCont::LetBx(env0, Pat::Var(x), e1) => {
                         if let Bx(bv) = v {
                             let _ = replace(&mut r.env, env0);
                             let _ = replace(&mut r.cont, e1);
@@ -137,10 +169,10 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             r.cont = *e1;
             Ok(())
         }
-        LetBx(Pat::Id(x), e1, e2) => {
+        LetBx(Pat::Var(x), e1, e2) => {
             let trace = replace(&mut r.trace, vec![]);
             r.stack.push(Frame {
-                cont: FrameCont::LetBx(r.env.clone(), Pat::Id(x), *e2),
+                cont: FrameCont::LetBx(r.env.clone(), Pat::Var(x), *e2),
                 trace,
             });
             r.cont = *e1;
@@ -148,10 +180,8 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
         }
         LetBx(_, e1, e2) => unimplemented!(),
         Extract(Var(x)) => {
-            let bx = r
-                .env
-                .bxes
-                .get(&x)
+            let bxo = r.env.bxes.get(&x);
+            let bx = bxo
                 .ok_or(Error::Extract(ExtractError::Undefined(x)))?
                 .clone();
             r.env.vals = HashMap::new();
@@ -183,11 +213,22 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
     }
 }
 
-pub fn system(sys: &mut System) {
-    unimplemented!()
-    // loop:
-    // each round: for each proc, attempt to step it once.
-    // if any proc steps, continue for another round; otherwise, end.
+pub fn system(sys: &mut System) -> Result<(), Error> {
+    if sys.procs.len() == 0 {
+        return Err(Error::NoProcs);
+    }
+    let mut stepped = false;
+    for (_, p) in sys.procs.iter_mut() {
+        match proc(p) {
+            Ok(()) => stepped = true,
+            Err(()) => (),
+        }
+    }
+    if stepped {
+        return Ok(());
+    } else {
+        return Err(Error::NoStep);
+    }
 }
 
 #[derive(Debug)]

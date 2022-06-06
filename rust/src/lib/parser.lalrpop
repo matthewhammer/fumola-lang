@@ -127,7 +127,7 @@ Num: i32 = {
 
 pub Pat: Pat = {
     "_" => Pat::Ignore,
-    <x:Id> => Pat::Id(x),
+    <x:Id> => Pat::Var(x),
 };
 
 pub Id: Id = {

@@ -72,8 +72,9 @@ pub enum Cases {
     Case(Case),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Sym {
+    None,
     Num(i32),
     Id(Id),
     Bin(Box<Sym>, Box<Sym>),
@@ -87,7 +88,7 @@ pub enum Sym {
 #[derive(Debug, Clone)]
 pub enum Pat {
     Ignore,
-    Id(Id),
+    Var(Id),
     Fields(Box<FieldsPat>),
     Case(Box<FieldPat>),
 }
@@ -148,9 +149,10 @@ pub mod step {
 
     /// System representation for stepping repeatedly.
     /// Compared with TraceNet, uses Procs in place of Net.
+    #[derive(Debug)]
     pub struct System {
         pub store: Store,
-        pub trace: Trace,
+        pub trace: Vec<Trace>,
         pub procs: Procs,
     }
 
@@ -191,6 +193,12 @@ pub mod step {
 
     #[derive(Debug, Clone)]
     pub enum Error {
+        /// Attempt to step Hole.  Internal logical error.
+        Hole,
+
+        /// No processes to consider stepping.
+        NoProcs,
+
         /// Signal (successful) halting state, with value.
         /// Not an error, but not ordinary stepping either.
         SignalHalt(Val),
@@ -236,6 +244,7 @@ pub mod step {
 
     #[derive(Debug, Clone)]
     pub enum Proc {
+        Spawn(Exp),
         Running(Running),
         Error(Running, Error),
         Halted(Halted),

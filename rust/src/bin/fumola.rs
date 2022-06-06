@@ -1,11 +1,27 @@
 use structopt::StructOpt;
 
 use log::info;
+use std::collections::HashMap;
+use std::io;
 use structopt::{clap, clap::Shell};
 
-use std::io;
+use fumola::{
+    ast::{
+        step::{Proc, System},
+        Exp, Sym,
+    },
+    error::OurResult,
+};
 
-use fumola::error::OurResult;
+pub fn system_from_exp(e: &Exp) -> System {
+    let mut procs = HashMap::new();
+    procs.insert(Sym::None, Proc::Spawn(e.clone()));
+    System {
+        store: HashMap::new(),
+        trace: vec![],
+        procs,
+    }
+}
 
 fn check_exp_(input: &str, ast: Option<&str>) {
     let expr = fumola::parser::ExpParser::new().parse(input).unwrap();
@@ -15,6 +31,14 @@ fn check_exp_(input: &str, ast: Option<&str>) {
             let i = format!("{:?}", input);
             let o = format!("{:?}", expr);
             println!("\ncheck_exp(\n\t{}, \n\t{:?}\n);", i, o);
+            let mut sys = system_from_exp(&expr);
+            loop {
+                match fumola::step::system(&mut sys) {
+                    Ok(()) => (),
+                    Err(e) => break,
+                }
+            }
+            println!("final system:\n{:?}", &sys)
         }
         Some(a) => assert_eq!(&format!("{:?}", expr), a),
     }
