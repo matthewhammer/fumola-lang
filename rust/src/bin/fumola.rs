@@ -68,7 +68,7 @@ fn test_put_get() {
 fn test_let_put_get() {
     check_exp(
         "let x = $a := 1; @x",
-        "Let(Id(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))",
+        "Let(Var(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))",
     );
 }
 
@@ -80,7 +80,7 @@ fn test_nest() {
 #[test]
 fn test_switch() {
     check_exp("switch #$apple(1) { #$apple(x){ret x}; #$banana(x){ret x} }",
-              "Switch(Variant(Sym(Id(\"apple\")), Num(1)), Gather(Case(Case { label: Sym(Id(\"apple\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) })))");
+              "Switch(Variant(Sym(Id(\"apple\")), Num(1)), Gather(Case(Case { label: Sym(Id(\"apple\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) })))");
 }
 
 #[test]
@@ -90,17 +90,17 @@ fn test_branches() {
         "Branches(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }))",
     );
     check_exp("{ $apple => ret 1; $banana => \\x => ret x }", 
-              "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Id(\"x\"), Ret(Var(\"x\"))) })))");
+              "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Ret(Var(\"x\"))) })))");
     check_exp(
 	      "{ $apple => ret 1; $banana => \\x => x := x } <= $apple",
-	      "Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Id(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"
+	      "Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"
     );
 }
 
 #[test]
 fn test_let_switch() {
     check_exp("let a = ret $apple; switch #a(1) { #a(x){ret x}; #$banana(x){ret x} }",
-              "Let(Id(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Id(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Id(\"x\"), body: Ret(Var(\"x\")) }))))");
+              "Let(Var(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }))))");
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn test_syms() {
 
 #[test]
 fn test_let_box() {
-    let ast = "LetBx(Id(\"f\"), Ret(Bx(BxVal { bxes: {}, name: None, code: Lambda(Id(\"x\"), Lambda(Id(\"y\"), Put(Var(\"x\"), Var(\"y\")))) })), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))";
+    let ast = "LetBx(Var(\"f\"), Ret(Bx(BxVal { bxes: {}, name: None, code: Lambda(Var(\"x\"), Lambda(Var(\"y\"), Put(Var(\"x\"), Var(\"y\")))) })), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))";
 
     // box f contains code that, when given a symbol and a value, puts the value at that symbol.
     check_exp("let box f = ret {\\x => \\y => x := y}; f $a 1", ast);

@@ -3,7 +3,7 @@ use crate::ast::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, PatternError, Proc, Running, System,
         Trace, ValueError,
     },
-    BxVal, Exp, Pat, Sym, Val, ValField,
+    Branches, BxVal, Cases, Exp, Pat, Sym, Val, ValField,
 };
 
 use std::collections::HashMap;
@@ -100,6 +100,47 @@ pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
     }
 }
 
+/// Shallow copy of expression head, using holes for subexpressions.
+///
+/// For debugging purposes, when we "take" the continuation from the
+/// system state to step it, we replace it with a (shallow) copy of
+/// its head expression, where each subexpression is a hole.  That
+/// way, the person debugging the stuck program can have a local copy
+/// of where it got stuck, but we avoid a full deep copy for each step.
+pub fn head(e: &Exp) -> Exp {
+    use Exp::*;
+    fn hole() -> Box<Exp> {
+        Box::new(Hole)
+    };
+    match e {
+        Nest(v, _) => Nest(v.clone(), hole()),
+        Lambda(pat, _) => Lambda(pat.clone(), hole()),
+        Put(v1, v2) => Put(v1.clone(), v2.clone()),
+        Get(v) => Get(v.clone()),
+        Link(v) => Link(v.clone()),
+        Ret(v) => Ret(v.clone()),
+        Switch(v, c) => Switch(v.clone(), head_cases(c)),
+        Let(pat, e1, e2) => Let(pat.clone(), hole(), hole()),
+        LetBx(pat, e1, e2) => LetBx(pat.clone(), hole(), hole()),
+        Extract(v) => Extract(v.clone()),
+        Hole => Hole,
+        App(e1, v) => App(hole(), v.clone()),
+        Project(e, v) => Project(hole(), v.clone()),
+        Branches(b) => Branches(head_branches(b)),
+        AssertEq(v1, b, v2) => AssertEq(v1.clone(), *b, v2.clone()),
+    }
+}
+
+pub fn head_branches(b: &Branches) -> Branches {
+    // to do -- for each branch case, keep pattern and hole the body.
+    Branches::Empty
+}
+
+pub fn head_cases(c: &Cases) -> Cases {
+    // to do -- for each branch case, keep pattern and hole the body.
+    Cases::Empty
+}
+
 /// step a running process.
 /// returns None if already Blocked.
 pub fn running(r: &mut Running) -> Result<(), Error> {
@@ -107,7 +148,8 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
     use std::mem::replace;
     use Exp::*;
     use Val::*;
-    let mut cont = replace(&mut r.cont, Hole);
+    let h = head(&r.cont);
+    let mut cont = replace(&mut r.cont, h);
     //println!("running({{cont = {:?}, ...}})", cont);
     match cont {
         Hole => Err(Error::Hole),
@@ -116,15 +158,17 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             if r.stack.len() == 0 {
                 Err(Error::SignalHalt(v))
             } else {
-                let fr = r.stack.pop().ok_or(Error::Impossible)?;
+                let fr = r.stack.last().ok_or(Error::Impossible)?.clone();
                 match fr.cont {
                     FrameCont::App(v) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
+                        r.stack.pop().ok_or(Error::Impossible)?;
                         let tr = replace(&mut r.trace, fr.trace);
                         r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
                         Ok(())
                     }
                     FrameCont::Let(mut env0, pat, e1) => {
+                        r.stack.pop().ok_or(Error::Impossible)?;
                         pattern(&pat, v, &mut env0)?;
                         let _ = replace(&mut r.env, env0);
                         let _ = replace(&mut r.cont, e1);
@@ -134,6 +178,7 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
                     }
                     FrameCont::LetBx(env0, Pat::Var(x), e1) => {
                         if let Bx(bv) = v {
+                            r.stack.pop().ok_or(Error::Impossible)?;
                             let _ = replace(&mut r.env, env0);
                             let _ = replace(&mut r.cont, e1);
                             let mut tr = replace(&mut r.trace, fr.trace);
@@ -193,7 +238,33 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             Ok(())
         }
         Extract(_) => unimplemented!(),
-
+        Lambda(pat, e1) => {
+            if r.stack.len() == 0 {
+                Err(Error::NoStep)
+            } else {
+                let fr = r.stack.pop().ok_or(Error::Impossible)?;
+                match fr.cont {
+                    FrameCont::App(v) => {
+                        pattern(&pat, v, &mut r.env)?;
+                        let mut tr = replace(&mut r.trace, fr.trace);
+                        r.trace.append(&mut tr);
+                        let _ = replace(&mut r.cont, *e1);
+                        Ok(())
+                    }
+                    _ => Err(Error::NoStep),
+                }
+            }
+        }
+        App(e1, v) => {
+            let trace = replace(&mut r.trace, vec![]);
+            let v = value(&r.env, &v)?;
+            r.stack.push(Frame {
+                cont: FrameCont::App(v),
+                trace,
+            });
+            r.cont = *e1;
+            Ok(())
+        }
         // To do
         // ------
 
