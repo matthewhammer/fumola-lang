@@ -107,6 +107,22 @@ fn test_put_get() {
 }
 
 #[test]
+fn test_nest_put_get() {
+    check_exp_(
+        "let x = #$n{ $a := 3 }; @x",
+        None,
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { retval: Num(3) })} }"));
+}
+
+#[test]
+fn test_get_undef() {
+    check_exp_(
+        "@$s",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Get(Sym(Id(\"s\"))), trace: [] }, Undefined(Id(\"s\")))} }"));
+}
+
+#[test]
 fn test_let_put_get() {
     check_exp(
         "let x = $a := 1; @x",

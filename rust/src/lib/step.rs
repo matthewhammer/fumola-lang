@@ -294,6 +294,17 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
             r.cont = Ret(Sym(sym));
             Ok(())
         }
+        Get(v) => {
+            let v1 = value(&r.env, &v)?;
+            let sym = into_symbol(v1)?;
+            let v2 = match store.get(&sym) {
+                None => return Err(Error::Undefined(sym)),
+                Some(v2) => v2.clone(),
+            };
+            r.trace.push(Trace::Get(sym.clone(), v2.clone()));
+            r.cont = Ret(v2);
+            Ok(())
+        }
         // To do
         // ------
 

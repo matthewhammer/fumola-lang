@@ -227,6 +227,9 @@ pub mod step {
         /// Value is not a symbol.
         NotASymbol(Val),
 
+        /// Symbol is not defined in the store.
+        Undefined(Sym),
+
         /// Duplicate process name.
         /// It is an error to name a spawned process a non-uniquely.
         Duplicate(Sym),
