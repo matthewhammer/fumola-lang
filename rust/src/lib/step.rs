@@ -111,7 +111,7 @@ pub fn head(e: &Exp) -> Exp {
     use Exp::*;
     fn hole() -> Box<Exp> {
         Box::new(Hole)
-    };
+    }
     match e {
         Nest(v, _) => Nest(v.clone(), hole()),
         Lambda(pat, _) => Lambda(pat.clone(), hole()),
@@ -268,8 +268,7 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
         // To do
         // ------
 
-        // Lambda(Pat, Box<Exp>),
-        // App(Box<Exp>, Val),
+        // Switch(Val, Cases),
 
         // Project(Box<Exp>, Val),
         // Branches(Branches),
@@ -278,8 +277,6 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
         // Get(Val),
         // Link(Val),
         // AssertEq(Val, bool, Val),
-
-        // Switch(Val, Cases),
         _ => unimplemented!(),
     }
 }
