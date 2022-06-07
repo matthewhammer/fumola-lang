@@ -149,8 +149,8 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
     use Exp::*;
     use Val::*;
     let h = head(&r.cont);
+    println!("running({{cont = {:?}, ...}})", h);
     let mut cont = replace(&mut r.cont, h);
-    //println!("running({{cont = {:?}, ...}})", cont);
     match cont {
         Hole => Err(Error::Hole),
         Ret(v) => {

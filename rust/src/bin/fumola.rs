@@ -15,6 +15,8 @@ use fumola::{
 
 pub fn system_from_exp(e: &Exp) -> System {
     let mut procs = HashMap::new();
+    // to do -- convert via cbpv module.
+    // decide: base name for temp variables.
     procs.insert(Sym::None, Proc::Spawn(e.clone()));
     System {
         store: HashMap::new(),
