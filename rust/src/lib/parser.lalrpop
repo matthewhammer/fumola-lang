@@ -64,8 +64,10 @@ pub ExpHd: Exp = {
     "assert" <v1:Val> "==" <v2:Val> => Exp::AssertEq(v1, true, v2),
     "assert" <v1:Val> "!=" <v2:Val> => Exp::AssertEq(v1, false, v2),
     "let" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::Let(p, e1, e2),
-    "let box" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::LetBx(p, e1, e2),
-    "let box" <p:Pat> "=" <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
+    "let" "box" <p:Pat> "=" <e1:ExpBox> ";" <e2:ExpBox> => Exp::LetBx(p, e1, e2),
+    "let" "box" <p:Pat> "=" <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
+    "let" "box" <p:Pat> <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
+    "box" <p:Pat> <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
     "ret" <v:Val> => Exp::Ret(v),
     ExpApp,
 };

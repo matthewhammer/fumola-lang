@@ -33,7 +33,7 @@ pub fn system_from_exp(e: &Exp) -> Result<System, ()> {
         index: 0,
     };
     let mut procs = HashMap::new();
-    let e = fumola::cbpv::expression(&mut fv, e)?;
+    let e = fumola::cbpv::convert(&mut fv, e)?;
     procs.insert(Sym::None, Proc::Spawn(e));
     Ok(System {
         store: HashMap::new(),
