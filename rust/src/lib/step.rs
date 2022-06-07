@@ -313,8 +313,6 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
         // Project(Box<Exp>, Val),
         // Branches(Branches),
 
-        // Put(Val, Val),
-        // Get(Val),
         // Link(Val),
         // AssertEq(Val, bool, Val),
         _ => unimplemented!(),
