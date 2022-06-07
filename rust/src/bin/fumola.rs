@@ -80,6 +80,25 @@ fn check_net(initial: &str, halted: &str) {
 }
 
 #[test]
+fn test_put() {
+    check_exp_(
+        "$a := 1",
+        None,
+        Some("System { store: {Id(\"a\"): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"a\")) })} }")
+    );
+}
+
+#[test]
+fn test_nest_put() {
+    check_exp_(
+        "#$n { $a := 1 }",
+        None,
+        // to do -- nested put should use nest name, but does not.
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }")
+    );
+}
+
+#[test]
 fn test_put_get() {
     check_exp(
         "@`($a := 1)",

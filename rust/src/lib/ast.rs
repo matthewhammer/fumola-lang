@@ -78,6 +78,8 @@ pub enum Sym {
     Num(i32),
     Id(Id),
     Bin(Box<Sym>, Box<Sym>),
+    /// Special binary case arising from putting within named nests
+    Nest(Box<Sym>, Box<Sym>),
     Tri(Box<Sym>, Box<Sym>, Box<Sym>),
     Dash,
     Under,
@@ -171,6 +173,8 @@ pub mod step {
 
     pub type Store = std::collections::HashMap<Sym, Val>;
 
+    pub type Stack = Vec<Frame>;
+
     pub type ValsEnv = std::collections::HashMap<Id, Val>;
 
     #[derive(Debug, Clone)]
@@ -220,6 +224,9 @@ pub mod step {
         /// Dynamically-determined type mismatch.
         NoStep,
 
+        /// Value is not a symbol.
+        NotASymbol(Val),
+
         /// Duplicate process name.
         /// It is an error to name a spawned process a non-uniquely.
         Duplicate(Sym),
@@ -253,7 +260,7 @@ pub mod step {
     #[derive(Debug, Clone)]
     pub struct Running {
         pub env: Env,
-        pub stack: Vec<Frame>,
+        pub stack: Stack,
         pub cont: Exp,
         pub trace: Vec<Trace>,
     }

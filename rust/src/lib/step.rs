@@ -1,7 +1,7 @@
 use crate::ast::{
     step::{
-        Env, Error, ExtractError, Frame, FrameCont, Halted, PatternError, Proc, Running, System,
-        Trace, ValueError,
+        Env, Error, ExtractError, Frame, FrameCont, Halted, PatternError, Proc, Running, Stack,
+        Store, System, Trace, ValueError,
     },
     Branches, BxVal, Cases, Exp, Pat, Sym, Val, ValField,
 };
@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
-pub fn proc(proc: &mut Proc) -> Result<(), ()> {
+pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
     let pr = std::mem::replace(proc, Proc::Spawn(Exp::Hole));
     match pr {
         Proc::Error(_, _) => {
@@ -33,7 +33,7 @@ pub fn proc(proc: &mut Proc) -> Result<(), ()> {
             });
             Ok(())
         }
-        Proc::Running(mut r) => match running(&mut r) {
+        Proc::Running(mut r) => match running(store, &mut r) {
             Ok(()) => {
                 *proc = Proc::Running(r);
                 Ok(())
@@ -142,9 +142,27 @@ pub fn head_cases(c: &Cases) -> Cases {
     Cases::Empty
 }
 
+pub fn into_symbol(v: Val) -> Result<Sym, Error> {
+    match v {
+        Val::Sym(s) => Ok(s),
+        _ => Err(Error::NotASymbol(v)),
+    }
+}
+
+pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
+    let mut r = s;
+    for fr in stack.iter().rev() {
+        match &fr.cont {
+            FrameCont::Nest(ns) => r = Sym::Nest(Box::new(ns.clone()), Box::new(r)),
+            _ => (),
+        }
+    }
+    r
+}
+
 /// step a running process.
 /// returns None if already Blocked.
-pub fn running(r: &mut Running) -> Result<(), Error> {
+pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
     // for each Exp form, step it, possibly to an Error.
     use std::mem::replace;
     use Exp::*;
@@ -257,13 +275,23 @@ pub fn running(r: &mut Running) -> Result<(), Error> {
             }
         }
         App(e1, v) => {
-            let trace = replace(&mut r.trace, vec![]);
             let v = value(&r.env, &v)?;
+            let trace = replace(&mut r.trace, vec![]);
             r.stack.push(Frame {
                 cont: FrameCont::App(v),
                 trace,
             });
             r.cont = *e1;
+            Ok(())
+        }
+        Put(v1, v2) => {
+            let v1 = value(&r.env, &v1)?;
+            let sym = into_symbol(v1)?;
+            let v2 = value(&r.env, &v2)?;
+            let sym = put_symbol(&r.stack, sym);
+            r.trace.push(Trace::Put(sym.clone(), v2.clone()));
+            store.insert(sym.clone(), v2);
+            r.cont = Ret(Sym(sym));
             Ok(())
         }
         // To do
@@ -288,7 +316,7 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
     }
     let mut stepped = false;
     for (_, p) in sys.procs.iter_mut() {
-        match proc(p) {
+        match proc(&mut sys.store, p) {
             Ok(()) => stepped = true,
             Err(()) => (),
         }
