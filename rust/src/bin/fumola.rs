@@ -13,19 +13,36 @@ use fumola::{
     error::OurResult,
 };
 
-pub fn system_from_exp(e: &Exp) -> System {
-    let mut procs = HashMap::new();
-    // to do -- convert via cbpv module.
-    // decide: base name for temp variables.
-    procs.insert(Sym::None, Proc::Spawn(e.clone()));
-    System {
-        store: HashMap::new(),
-        trace: vec![],
-        procs,
+struct FreeVars {
+    pub base: String,
+    pub index: u32,
+}
+
+impl Iterator for FreeVars {
+    type Item = String;
+    fn next(&mut self) -> Option<Self::Item> {
+        let r = Some(format!("{}{}", self.base, self.index));
+        self.index += 1;
+        r
     }
 }
 
-fn check_exp_(input: &str, ast: Option<&str>) {
+pub fn system_from_exp(e: &Exp) -> Result<System, ()> {
+    let mut fv = FreeVars {
+        base: "_t_".to_string(),
+        index: 0,
+    };
+    let mut procs = HashMap::new();
+    let e = fumola::cbpv::expression(&mut fv, e)?;
+    procs.insert(Sym::None, Proc::Spawn(e));
+    Ok(System {
+        store: HashMap::new(),
+        trace: vec![],
+        procs,
+    })
+}
+
+fn check_exp_(input: &str, ast: Option<&str>) -> Result<(), ()> {
     let expr = fumola::parser::ExpParser::new().parse(input).unwrap();
     match ast {
         None => {
@@ -33,20 +50,24 @@ fn check_exp_(input: &str, ast: Option<&str>) {
             let i = format!("{:?}", input);
             let o = format!("{:?}", expr);
             println!("\ncheck_exp(\n\t{}, \n\t{:?}\n);", i, o);
-            let mut sys = system_from_exp(&expr);
+            let mut sys = system_from_exp(&expr)?;
             loop {
                 match fumola::step::system(&mut sys) {
                     Ok(()) => (),
                     Err(e) => break,
                 }
             }
-            println!("final system:\n{:?}", &sys)
+            println!("final system:\n{:?}", &sys);
+            Ok(())
         }
-        Some(a) => assert_eq!(&format!("{:?}", expr), a),
+        Some(a) => {
+            assert_eq!(&format!("{:?}", expr), a);
+            Err(())
+        }
     }
 }
 
-fn check_exp(input: &str, ast: &str) {
+fn check_exp(input: &str, ast: &str) -> Result<(), ()> {
     check_exp_(input, Some(ast))
 }
 

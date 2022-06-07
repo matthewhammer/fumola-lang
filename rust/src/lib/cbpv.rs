@@ -46,9 +46,14 @@ pub fn expression<I: Iterator<Item = String>>(free_vars: &mut I, e: &Exp) -> Res
         }
     }
     match e {
+        Hole => Ok(Hole),
         Extract(v) => {
             let v = value(free_vars, &mut bindings, v)?;
             Ok(wrap(bindings, Extract(v)))
+        }
+        Ret(v) => {
+            let v = value(free_vars, &mut bindings, v)?;
+            Ok(wrap(bindings, Ret(v)))
         }
         Nest(v, e) => {
             let v = value(free_vars, &mut bindings, v)?;
@@ -74,6 +79,7 @@ pub fn expression<I: Iterator<Item = String>>(free_vars: &mut I, e: &Exp) -> Res
         Branches(bs) => {
             unimplemented!()
         }
+        Lambda(pat, e) => Ok(Lambda(pat.clone(), expression_(free_vars, e)?)),
         Project(e, v) => {
             let v = value(free_vars, &mut bindings, v)?;
             Ok(wrap(bindings, Project(expression_(free_vars, e)?, v)))
