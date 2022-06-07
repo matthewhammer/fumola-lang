@@ -92,6 +92,7 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
 /// Updates the environment for each pattern-identifier match, even if pattern error.
 pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
     match p {
+        Pat::Ignore => Ok(()),
         Pat::Var(x) => {
             env.vals.insert(x.clone(), v);
             Ok(())

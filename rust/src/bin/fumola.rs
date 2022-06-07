@@ -42,33 +42,33 @@ pub fn system_from_exp(e: &Exp) -> Result<System, ()> {
     })
 }
 
-fn check_exp_(input: &str, ast: Option<&str>) -> Result<(), ()> {
+fn check_exp_(input: &str, ast: Option<&str>, final_sys: Option<&str>) -> Result<(), ()> {
     let expr = fumola::parser::ExpParser::new().parse(input).unwrap();
     match ast {
-        None => {
-            println!("{:?}\ncheck_exp: Ok.", expr);
-            let i = format!("{:?}", input);
-            let o = format!("{:?}", expr);
-            println!("\ncheck_exp(\n\t{}, \n\t{:?}\n);", i, o);
-            let mut sys = system_from_exp(&expr)?;
-            loop {
-                match fumola::step::system(&mut sys) {
-                    Ok(()) => (),
-                    Err(e) => break,
-                }
-            }
-            println!("final system:\n{:?}", &sys);
-            Ok(())
-        }
+        None => (),
         Some(a) => {
             assert_eq!(&format!("{:?}", expr), a);
-            Err(())
+        }
+    };
+    let mut sys = system_from_exp(&expr)?;
+    loop {
+        match fumola::step::system(&mut sys) {
+            Ok(()) => (),
+            Err(e) => break,
         }
     }
+    println!("final system:\n{:?}", &sys);
+    match final_sys {
+        None => (),
+        Some(s) => {
+            assert_eq!(&format!("{:?}", &sys), s);
+        }
+    };
+    Ok(())
 }
 
 fn check_exp(input: &str, ast: &str) -> Result<(), ()> {
-    check_exp_(input, Some(ast))
+    check_exp_(input, Some(ast), None)
 }
 
 fn check_net(initial: &str, halted: &str) {
@@ -172,6 +172,14 @@ fn test_net_put_link_get() {
     );
 }
 
+#[test]
+fn test_cbpv_convert() {
+    check_exp_(
+        "box id3 {\\x => \\y => \\z => ret x}; box one {ret 1}; box two {ret 2}; box three {ret 3}; id3 `(one) `(two) `(three)",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }"));
+}
+
 /// Fumola tools
 #[derive(StructOpt, Debug, Clone)]
 #[structopt(
@@ -231,7 +239,7 @@ fn main() -> OurResult<()> {
     info!("Evaluating CLI command: {:?} ...", &cli_opt.command);
     let () = match cli_opt.command {
         CliCommand::Check { input: i } => {
-            check_exp_(i.as_str(), None);
+            check_exp_(i.as_str(), None, None);
         }
         CliCommand::Completions { shell: s } => {
             // see also: https://clap.rs/effortless-auto-completion/
