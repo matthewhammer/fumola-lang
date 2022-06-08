@@ -132,7 +132,11 @@ fn test_let_put_get() {
 
 #[test]
 fn test_nest() {
-    check_exp("# $311 { ret 311 }", "Nest(Sym(Num(311)), Ret(Num(311)))");
+    check_exp_(
+        "# $311 { ret 311 }",
+        Some("Nest(Sym(Num(311)), Ret(Num(311)))"),
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(311) })} }"),
+    );
 }
 
 #[test]
