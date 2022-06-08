@@ -240,6 +240,9 @@ pub mod step {
         /// Switch stepping error.
         Switch(SwitchError),
 
+        /// Switch stepping error.
+        Project(ProjectError),
+
         /// No stepping rule applies.
         /// Dynamically-determined type mismatch.
         NoStep,
@@ -259,6 +262,11 @@ pub mod step {
     pub enum SwitchError {
         NotVariant(Val),
         MissingCase(Sym),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum ProjectError {
+        MissingBranch(Sym),
     }
 
     #[derive(Debug, Clone)]
@@ -310,6 +318,7 @@ pub mod step {
         LetBx(Env, Pat, Exp),
         Let(Env, Pat, Exp),
         App(Val),
+        Project(Val),
         Nest(Sym),
     }
 }

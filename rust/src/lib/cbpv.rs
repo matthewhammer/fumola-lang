@@ -1,4 +1,4 @@
-use crate::ast::{BxVal, Case, Cases, Exp, Pat, Val};
+use crate::ast::{Branch, Branches, BxVal, Case, Cases, Exp, Pat, Val};
 
 use std::collections::HashMap;
 
@@ -86,6 +86,24 @@ fn cases<I: Iterator<Item = String>>(
     }
 }
 
+fn branches<I: Iterator<Item = String>>(
+    free_vars: &mut I,
+    bindings: &mut Bindings,
+    bs: &Branches,
+) -> Result<Branches, ()> {
+    match bs {
+        Branches::Empty => Ok(Branches::Empty),
+        Branches::Gather(b1, b2) => Ok(Branches::Gather(
+            Box::new(branches(free_vars, bindings, b1)?),
+            Box::new(branches(free_vars, bindings, b2)?),
+        )),
+        Branches::Branch(br) => Ok(Branches::Branch(Branch {
+            label: value(free_vars, bindings, &br.label)?,
+            body: expression_(free_vars, bindings, &br.body)?,
+        })),
+    }
+}
+
 fn expression<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
@@ -125,9 +143,7 @@ fn expression<I: Iterator<Item = String>>(
             let v = value(free_vars, bindings, v)?;
             Ok(Switch(v, cases(free_vars, bindings, cs)?))
         }
-        Branches(bs) => {
-            unimplemented!()
-        }
+        Branches(bs) => Ok(Branches(branches(free_vars, bindings, bs)?)),
         Lambda(pat, e) => Ok(Lambda(pat.clone(), expression_(free_vars, bindings, e)?)),
         Project(e, v) => {
             let v = value(free_vars, bindings, v)?;

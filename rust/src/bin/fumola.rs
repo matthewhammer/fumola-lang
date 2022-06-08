@@ -142,16 +142,25 @@ fn test_switch() {
 }
 
 #[test]
-fn test_branches() {
+fn test_branches_1() {
     check_exp(
         "{ $apple => ret 1 }",
         "Branches(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }))",
     );
+}
+
+#[test]
+fn test_branches_2() {
     check_exp("{ $apple => ret 1; $banana => \\x => ret x }", 
               "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Ret(Var(\"x\"))) })))");
-    check_exp(
+}
+
+#[test]
+fn test_project_branches() {
+    check_exp_(
 	      "{ $apple => ret 1; $banana => \\x => x := x } <= $apple",
-	      "Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"
+	      Some("Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"),
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")
     );
 }
 

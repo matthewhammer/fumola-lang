@@ -1,9 +1,9 @@
 use crate::ast::{
     step::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
-        Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
+        ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
     },
-    Branches, BxVal, Case, Cases, Exp, Pat, Sym, Val, ValField,
+    Branch, Branches, BxVal, Case, Cases, Exp, Pat, Sym, Val, ValField,
 };
 
 use std::collections::HashMap;
@@ -183,7 +183,7 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                     .ok_or(Error::Internal(InternalError::Impossible))?
                     .clone();
                 match fr.cont {
-                    FrameCont::App(v) => Err(Error::NoStep),
+                    FrameCont::App(_) | FrameCont::Project(_) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
                         r.stack
                             .pop()
@@ -287,11 +287,42 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                 }
             }
         }
+        Branches(branches) => {
+            if r.stack.len() == 0 {
+                Err(Error::NoStep)
+            } else {
+                let fr = r
+                    .stack
+                    .pop()
+                    .ok_or(Error::Internal(InternalError::Impossible))?;
+                match fr.cont {
+                    FrameCont::Project(v) => {
+                        let sym = into_symbol(v)?;
+                        let br = project_branch(&r.env, &sym, branches)?;
+                        let mut tr = replace(&mut r.trace, fr.trace);
+                        r.trace.append(&mut tr);
+                        let _ = replace(&mut r.cont, *br.body);
+                        Ok(())
+                    }
+                    _ => Err(Error::NoStep),
+                }
+            }
+        }
         App(e1, v) => {
             let v = value(&r.env, &v)?;
             let trace = replace(&mut r.trace, vec![]);
             r.stack.push(Frame {
                 cont: FrameCont::App(v),
+                trace,
+            });
+            r.cont = *e1;
+            Ok(())
+        }
+        Project(e1, v) => {
+            let v = value(&r.env, &v)?;
+            let trace = replace(&mut r.trace, vec![]);
+            r.stack.push(Frame {
+                cont: FrameCont::Project(v),
                 trace,
             });
             r.cont = *e1;
@@ -334,12 +365,29 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
         // To do
         // ------
 
-        // Project(Box<Exp>, Val),
-        // Branches(Branches),
-
         // Link(Val),
         // AssertEq(Val, bool, Val),
         _ => unimplemented!(),
+    }
+}
+
+pub fn project_branch(env: &Env, sym: &Sym, bs: Branches) -> Result<Branch, Error> {
+    match bs {
+        Branches::Empty => Err(Error::Project(ProjectError::MissingBranch(sym.clone()))),
+        Branches::Gather(b1, b2) => match project_branch(env, sym, *b1) {
+            Ok(e) => Ok(e),
+            Err(Error::Project(ProjectError::MissingBranch(_))) => project_branch(env, sym, *b2),
+            Err(e) => Err(e),
+        },
+        Branches::Branch(branch) => {
+            let label = value(env, &branch.label)?;
+            let label_sym = into_symbol(label)?;
+            if &label_sym == sym {
+                Ok(branch)
+            } else {
+                Err(Error::Project(ProjectError::MissingBranch(sym.clone())))
+            }
+        }
     }
 }
 
