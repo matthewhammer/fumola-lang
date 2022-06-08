@@ -78,7 +78,7 @@ pub enum Sym {
     Num(i32),
     Id(Id),
     Bin(Box<Sym>, Box<Sym>),
-    /// Special binary case arising from putting within named nests
+    /// Nest: Special binary case arising from putting within named nests.
     Nest(Box<Sym>, Box<Sym>),
     Tri(Box<Sym>, Box<Sym>, Box<Sym>),
     Dash,
@@ -129,11 +129,6 @@ pub mod step {
 
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.
-    ///
-    /// (to do -- surface syntax for all of the above net-internal
-    /// structure, and then we can write these more general net forms
-    /// too, e.g., to represent a net that we see live somewhere, or
-    /// the final form of a net, for behavioral tests)
     #[derive(Debug)]
     pub enum Net {
         Running(Sym, Exp),
@@ -195,21 +190,43 @@ pub mod step {
         }
     }
 
+    /// Signal.
+    /// Not an error, but not ordinary stepping either.
     #[derive(Debug, Clone)]
-    pub enum Error {
-        /// Attempt to step Hole.  Internal logical error.
-        Hole,
+    pub enum Signal {
+        /// Process has successfully produced a final return value.
+        Halt(Val),
+        /// Process is waiting to link to a symbol not yet in the store,
+        /// (or a process not yet terminated with a return value).
+        LinkWait(Sym),
+    }
 
-        /// No processes to consider stepping.
-        NoProcs,
-
-        /// Signal (successful) halting state, with value.
-        /// Not an error, but not ordinary stepping either.
-        SignalHalt(Val),
-
+    /// Fumola implementation errors.
+    #[derive(Debug, Clone)]
+    pub enum InternalError {
         /// Logically-impossible error.
         /// (but Rust type system cannot disprove.)
         Impossible,
+
+        /// Attempt to step Hole.  Internal logical error.
+        /// Special kind of Impossible Error.
+        Hole,
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum Error {
+        /// Signal.
+        /// Not an error, but not ordinary stepping either.
+        Signal(Signal),
+
+        /// Implementation-caused errors.
+        Internal(InternalError),
+
+        //
+        // # Fumola program / proogrammer errors,
+        //
+        /// No processes to consider stepping.
+        NoProcs,
 
         /// Pattern matching error.
         Pattern(PatternError),

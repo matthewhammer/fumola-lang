@@ -1,7 +1,7 @@
 use crate::ast::{
     step::{
-        Env, Error, ExtractError, Frame, FrameCont, Halted, PatternError, Proc, Running, Stack,
-        Store, System, Trace, ValueError,
+        Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
+        Running, Signal, Stack, Store, System, Trace, ValueError,
     },
     Branches, BxVal, Cases, Exp, Pat, Sym, Val, ValField,
 };
@@ -38,7 +38,7 @@ pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
                 *proc = Proc::Running(r);
                 Ok(())
             }
-            Err(Error::SignalHalt(v)) => {
+            Err(Error::Signal(Signal::Halt(v))) => {
                 *proc = Proc::Halted(Halted { retval: v });
                 Ok(())
             }
@@ -171,23 +171,31 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
     println!("running({{cont = {:?}, ...}})", h);
     let mut cont = replace(&mut r.cont, h);
     match cont {
-        Hole => Err(Error::Hole),
+        Hole => Err(Error::Internal(InternalError::Hole)),
         Ret(v) => {
             let v = value(&r.env, &v)?;
             if r.stack.len() == 0 {
-                Err(Error::SignalHalt(v))
+                Err(Error::Signal(Signal::Halt(v)))
             } else {
-                let fr = r.stack.last().ok_or(Error::Impossible)?.clone();
+                let fr = r
+                    .stack
+                    .last()
+                    .ok_or(Error::Internal(InternalError::Impossible))?
+                    .clone();
                 match fr.cont {
                     FrameCont::App(v) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
-                        r.stack.pop().ok_or(Error::Impossible)?;
+                        r.stack
+                            .pop()
+                            .ok_or(Error::Internal(InternalError::Impossible))?;
                         let tr = replace(&mut r.trace, fr.trace);
                         r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
                         Ok(())
                     }
                     FrameCont::Let(mut env0, pat, e1) => {
-                        r.stack.pop().ok_or(Error::Impossible)?;
+                        r.stack
+                            .pop()
+                            .ok_or(Error::Internal(InternalError::Impossible))?;
                         pattern(&pat, v, &mut env0)?;
                         let _ = replace(&mut r.env, env0);
                         let _ = replace(&mut r.cont, e1);
@@ -197,7 +205,9 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                     }
                     FrameCont::LetBx(env0, Pat::Var(x), e1) => {
                         if let Bx(bv) = v {
-                            r.stack.pop().ok_or(Error::Impossible)?;
+                            r.stack
+                                .pop()
+                                .ok_or(Error::Internal(InternalError::Impossible))?;
                             let _ = replace(&mut r.env, env0);
                             let _ = replace(&mut r.cont, e1);
                             let mut tr = replace(&mut r.trace, fr.trace);
@@ -261,7 +271,10 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
             if r.stack.len() == 0 {
                 Err(Error::NoStep)
             } else {
-                let fr = r.stack.pop().ok_or(Error::Impossible)?;
+                let fr = r
+                    .stack
+                    .pop()
+                    .ok_or(Error::Internal(InternalError::Impossible))?;
                 match fr.cont {
                     FrameCont::App(v) => {
                         pattern(&pat, v, &mut r.env)?;
