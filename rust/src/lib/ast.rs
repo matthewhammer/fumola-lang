@@ -237,6 +237,9 @@ pub mod step {
         /// Code extraction error.
         Extract(ExtractError),
 
+        /// Switch stepping error.
+        Switch(SwitchError),
+
         /// No stepping rule applies.
         /// Dynamically-determined type mismatch.
         NoStep,
@@ -250,6 +253,12 @@ pub mod step {
         /// Duplicate process name.
         /// It is an error to name a spawned process a non-uniquely.
         Duplicate(Sym),
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum SwitchError {
+        NotVariant(Val),
+        MissingCase(Sym),
     }
 
     #[derive(Debug, Clone)]

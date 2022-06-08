@@ -157,8 +157,11 @@ fn test_branches() {
 
 #[test]
 fn test_let_switch() {
-    check_exp("let a = ret $apple; switch #a(1) { #a(x){ret x}; #$banana(x){ret x} }",
-              "Let(Var(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }))))");
+    check_exp_(
+        "let a = ret $apple; switch #a(1) { #a(x){ret x}; #$banana(x){ret x} }",
+        Some("Let(Var(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }))))"),
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")
+    );
 }
 
 #[test]

@@ -1,4 +1,4 @@
-use crate::ast::{BxVal, Exp, Pat, Val};
+use crate::ast::{BxVal, Case, Cases, Exp, Pat, Val};
 
 use std::collections::HashMap;
 
@@ -48,8 +48,13 @@ fn value<I: Iterator<Item = String>>(
             code: convert(free_vars, &bx.code)?,
         }))),
         Record(r) => unimplemented!(),
-        RecordExt(v1, v2) => unimplemented!(),
-        Variant(v1, v2) => unimplemented!(),
+        RecordExt(v1, v2) => {
+            unimplemented!()
+        }
+        Variant(v1, v2) => Ok(Variant(
+            Box::new(value(free_vars, bindings, v1)?),
+            Box::new(value(free_vars, bindings, v2)?),
+        )),
         Sym(_) | Ptr(_) | Proc(_) | Num(_) | Var(_) => Ok(v.clone()),
     }
 }
@@ -60,6 +65,25 @@ fn expression_<I: Iterator<Item = String>>(
     e: &Exp,
 ) -> Result<Box<Exp>, ()> {
     Ok(Box::new(expression(free_vars, bindings, e)?))
+}
+
+fn cases<I: Iterator<Item = String>>(
+    free_vars: &mut I,
+    bindings: &mut Bindings,
+    cs: &Cases,
+) -> Result<Cases, ()> {
+    match cs {
+        Cases::Empty => Ok(Cases::Empty),
+        Cases::Gather(cases1, cases2) => Ok(Cases::Gather(
+            Box::new(cases(free_vars, bindings, cases1)?),
+            Box::new(cases(free_vars, bindings, cases2)?),
+        )),
+        Cases::Case(case) => Ok(Cases::Case(Case {
+            label: value(free_vars, bindings, &case.label)?,
+            pattern: case.pattern.clone(),
+            body: expression_(free_vars, bindings, &case.body)?,
+        })),
+    }
 }
 
 fn expression<I: Iterator<Item = String>>(
@@ -98,7 +122,8 @@ fn expression<I: Iterator<Item = String>>(
             convert_(free_vars, e2)?,
         )),
         Switch(v, cs) => {
-            unimplemented!()
+            let v = value(free_vars, bindings, v)?;
+            Ok(Switch(v, cases(free_vars, bindings, cs)?))
         }
         Branches(bs) => {
             unimplemented!()

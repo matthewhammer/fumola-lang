@@ -1,9 +1,9 @@
 use crate::ast::{
     step::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
-        Running, Signal, Stack, Store, System, Trace, ValueError,
+        Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
     },
-    Branches, BxVal, Cases, Exp, Pat, Sym, Val, ValField,
+    Branches, BxVal, Case, Cases, Exp, Pat, Sym, Val, ValField,
 };
 
 use std::collections::HashMap;
@@ -318,10 +318,21 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
             r.cont = Ret(v2);
             Ok(())
         }
+        Switch(v, cases) => {
+            let v = value(&r.env, &v)?;
+            match v {
+                Val::Variant(v1, v2) => {
+                    let sym = into_symbol(*v1)?;
+                    let case = switch_case(&r.env, &sym, cases)?;
+                    pattern(&case.pattern, *v2, &mut r.env)?;
+                    r.cont = *case.body;
+                    Ok(())
+                }
+                v => Err(Error::Switch(SwitchError::NotVariant(v))),
+            }
+        }
         // To do
         // ------
-
-        // Switch(Val, Cases),
 
         // Project(Box<Exp>, Val),
         // Branches(Branches),
@@ -329,6 +340,26 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
         // Link(Val),
         // AssertEq(Val, bool, Val),
         _ => unimplemented!(),
+    }
+}
+
+pub fn switch_case(env: &Env, sym: &Sym, cases: Cases) -> Result<Case, Error> {
+    match cases {
+        Cases::Empty => Err(Error::Switch(SwitchError::MissingCase(sym.clone()))),
+        Cases::Gather(cases1, cases2) => match switch_case(env, sym, *cases1) {
+            Ok(e) => Ok(e),
+            Err(Error::Switch(SwitchError::MissingCase(_))) => switch_case(env, sym, *cases2),
+            Err(e) => Err(e),
+        },
+        Cases::Case(case) => {
+            let label = value(env, &case.label)?;
+            let label_sym = into_symbol(label)?;
+            if &label_sym == sym {
+                Ok(case)
+            } else {
+                Err(Error::Switch(SwitchError::MissingCase(sym.clone())))
+            }
+        }
     }
 }
 
