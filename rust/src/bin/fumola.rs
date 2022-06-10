@@ -206,7 +206,8 @@ fn test_let_box_syntax() {
 
 #[test]
 fn test_let_box() {
-    // box 'put' contains code that, when given a symbol and a value, puts the value at that symbol.
+    // box 'put_' contains code that, when given a symbol and a value,
+    // puts the value at that symbol.
     let result = "System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }";
 
     check_exp_(
@@ -230,6 +231,13 @@ fn test_put_link() {
     check_exp_("let _ = $s := 42; &$s",
                None,
                Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"s\")) })} }")).unwrap()
+}
+
+#[test]
+fn test_put_link_get() {
+    check_exp_("let _ = $s := 42; @`(&$s)",
+               None,
+               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { retval: Num(42) })} }")).unwrap()
 }
 
 #[test]
