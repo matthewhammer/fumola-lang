@@ -51,12 +51,7 @@ fn check_exp_(input: &str, ast: Option<&str>, final_sys: Option<&str>) -> Result
         }
     };
     let mut sys = system_from_exp(&expr)?;
-    loop {
-        match fumola::step::system(&mut sys) {
-            Ok(()) => (),
-            Err(_e) => break,
-        }
-    }
+    fumola::step::fully(&mut sys);
     println!("final system:\n{:?}", &sys);
     match final_sys {
         None => (),
@@ -93,7 +88,6 @@ fn test_nest_put() {
     check_exp_(
         "#$n { $a := 1 }",
         None,
-        // to do -- nested put should use nest name, but does not.
         Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }")
     ).unwrap();
 }
@@ -212,6 +206,13 @@ fn test_put_link() {
     check_exp_("let _ = $s := 42; &$s",
                None,
                Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"s\")) })} }")).unwrap()
+}
+
+#[test]
+fn test_open_link() {
+    check_exp_("&$s",
+               None,
+               Some("System { store: {}, trace: [], procs: {None: Waiting(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Sym(Id(\"s\"))), trace: [] }, Id(\"s\"))} }")).unwrap()
 }
 
 #[test]

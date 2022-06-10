@@ -290,6 +290,7 @@ pub mod step {
     pub enum Proc {
         Spawn(Exp),
         Running(Running),
+        Waiting(Running, Sym),
         Error(Running, Error),
         Halted(Halted),
     }

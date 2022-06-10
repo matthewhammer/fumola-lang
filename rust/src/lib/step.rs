@@ -33,6 +33,22 @@ pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
             });
             Ok(())
         }
+        Proc::Waiting(_, ref s) => match store.get(s) {
+            None => {
+                *proc = pr;
+                Err(())
+            }
+            Some(_) => {
+                fn resume(pr: Proc) -> Proc {
+                    match pr {
+                        Proc::Waiting(r, _) => Proc::Running(r),
+                        _ => unreachable!(),
+                    }
+                }
+                *proc = resume(pr);
+                Ok(())
+            }
+        },
         Proc::Running(mut r) => match running(store, &mut r) {
             Ok(()) => {
                 *proc = Proc::Running(r);
@@ -40,6 +56,10 @@ pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
             }
             Err(Error::Signal(Signal::Halt(v))) => {
                 *proc = Proc::Halted(Halted { retval: v });
+                Ok(())
+            }
+            Err(Error::Signal(Signal::LinkWait(s))) => {
+                *proc = Proc::Waiting(r.clone(), s);
                 Ok(())
             }
             Err(err) => {
@@ -372,7 +392,8 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                     Err(Error::Signal(Signal::LinkWait(sym)))
                 }
                 Some(_) => {
-                    r.trace.push(Trace::Link(Val::Sym(sym.clone()), Val::Sym(sym.clone())));
+                    r.trace
+                        .push(Trace::Link(Val::Sym(sym.clone()), Val::Sym(sym.clone())));
                     r.cont = Ret(Val::Sym(sym));
                     Ok(())
                 }
@@ -426,6 +447,7 @@ pub fn switch_case(env: &Env, sym: &Sym, cases: Cases) -> Result<Case, Error> {
     }
 }
 
+/// Step the system at most once, if possible.
 pub fn system(sys: &mut System) -> Result<(), Error> {
     if sys.procs.len() == 0 {
         return Err(Error::NoProcs);
@@ -441,5 +463,15 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
         return Ok(());
     } else {
         return Err(Error::NoStep);
+    }
+}
+
+/// Fully step the system (to extent possible).
+pub fn fully(sys: &mut System) {
+    loop {
+        match system(sys) {
+            Ok(()) => (),
+            Err(_e) => break,
+        }
     }
 }
