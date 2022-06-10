@@ -191,14 +191,38 @@ fn test_syms() {
 }
 
 #[test]
-fn test_let_box() {
+fn test_let_box_syntax() {
     let ast = "LetBx(Var(\"f\"), Ret(Bx(BxVal { bxes: {}, name: None, code: Lambda(Var(\"x\"), Lambda(Var(\"y\"), Put(Var(\"x\"), Var(\"y\")))) })), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))";
 
-    // box f contains code that, when given a symbol and a value, puts the value at that symbol.
+    // 0. most verbose, with least special syntax.
     check_exp("let box f = ret {\\x => \\y => x := y}; f $a 1", ast).unwrap();
 
-    // the "ret" keyword is optional when we give a literal box value
+    // 1. the "ret" keyword is optional when we give a literal box value.
     check_exp("let box f = {\\x => \\y => x := y}; f $a 1", ast).unwrap();
+
+    // 2. the "let" keyword (and '=') is also optional when we give a literal box value.
+    check_exp("box f {\\x => \\y => x := y}; f $a 1", ast).unwrap();
+}
+
+#[test]
+fn test_let_box() {
+    // box 'put' contains code that, when given a symbol and a value, puts the value at that symbol.
+    let result = "System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }";
+
+    check_exp_(
+        "let box put_ = ret {\\x => \\y => x := y}; #$n { put_ $a 1 }",
+        None,
+        Some(result),
+    )
+    .unwrap();
+
+    // shorter syntax.
+    check_exp_(
+        "box put_ {\\x => \\y => x := y}; #$n { put_ $a 1 }",
+        None,
+        Some(result),
+    )
+    .unwrap();
 }
 
 #[test]
