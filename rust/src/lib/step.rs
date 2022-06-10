@@ -362,10 +362,25 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                 v => Err(Error::Switch(SwitchError::NotVariant(v))),
             }
         }
+        Link(v1) => {
+            let v1 = value(&r.env, &v1)?;
+            // to do -- generalize: link generally chooses among several options.
+            let sym = into_symbol(v1)?; // to do -- also handle symbol sets, sequences.
+            match store.get(&sym) {
+                None => {
+                    r.cont = Link(Val::Sym(sym.clone()));
+                    Err(Error::Signal(Signal::LinkWait(sym)))
+                }
+                Some(_) => {
+                    r.trace.push(Trace::Link(Val::Sym(sym.clone()), Val::Sym(sym.clone())));
+                    r.cont = Ret(Val::Sym(sym));
+                    Ok(())
+                }
+            }
+        }
         // To do
         // ------
 
-        // Link(Val),
         // AssertEq(Val, bool, Val),
         _ => unimplemented!(),
     }

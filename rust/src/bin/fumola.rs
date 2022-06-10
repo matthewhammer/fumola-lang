@@ -85,7 +85,7 @@ fn test_put() {
         "$a := 1",
         None,
         Some("System { store: {Id(\"a\"): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"a\")) })} }")
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn test_nest_put() {
         None,
         // to do -- nested put should use nest name, but does not.
         Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }")
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -103,7 +103,8 @@ fn test_put_get() {
     check_exp(
         "@`($a := 1)",
         "Get(CallByValue(Put(Sym(Id(\"a\")), Num(1))))",
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -111,7 +112,7 @@ fn test_nest_put_get() {
     check_exp_(
         "let x = #$n{ $a := 3 }; @x",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { retval: Num(3) })} }"));
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { retval: Num(3) })} }")).unwrap();
 }
 
 #[test]
@@ -119,7 +120,7 @@ fn test_get_undef() {
     check_exp_(
         "@$s",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Get(Sym(Id(\"s\"))), trace: [] }, Undefined(Id(\"s\")))} }"));
+        Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Get(Sym(Id(\"s\"))), trace: [] }, Undefined(Id(\"s\")))} }")).unwrap();
 }
 
 #[test]
@@ -127,7 +128,8 @@ fn test_let_put_get() {
     check_exp(
         "let x = $a := 1; @x",
         "Let(Var(\"x\"), Put(Sym(Id(\"a\")), Num(1)), Get(Var(\"x\")))",
-    );
+    )
+    .unwrap();
 }
 
 #[test]
@@ -136,13 +138,14 @@ fn test_nest() {
         "# $311 { ret 311 }",
         Some("Nest(Sym(Num(311)), Ret(Num(311)))"),
         Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(311) })} }"),
-    );
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_switch() {
     check_exp("switch #$apple(1) { #$apple(x){ret x}; #$banana(x){ret x} }",
-              "Switch(Variant(Sym(Id(\"apple\")), Num(1)), Gather(Case(Case { label: Sym(Id(\"apple\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) })))");
+              "Switch(Variant(Sym(Id(\"apple\")), Num(1)), Gather(Case(Case { label: Sym(Id(\"apple\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) })))").unwrap();
 }
 
 #[test]
@@ -150,13 +153,14 @@ fn test_branches_1() {
     check_exp(
         "{ $apple => ret 1 }",
         "Branches(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }))",
-    );
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_branches_2() {
     check_exp("{ $apple => ret 1; $banana => \\x => ret x }", 
-              "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Ret(Var(\"x\"))) })))");
+              "Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Ret(Var(\"x\"))) })))").unwrap();
 }
 
 #[test]
@@ -165,7 +169,7 @@ fn test_project_branches() {
 	      "{ $apple => ret 1; $banana => \\x => x := x } <= $apple",
 	      Some("Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"),
         Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -174,7 +178,7 @@ fn test_let_switch() {
         "let a = ret $apple; switch #a(1) { #a(x){ret x}; #$banana(x){ret x} }",
         Some("Let(Var(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }))))"),
         Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")
-    );
+    ).unwrap();
 }
 
 #[test]
@@ -182,13 +186,14 @@ fn test_syms() {
     check_exp(
         "let _ = ret $1; let _ = ret $a; ret 0",
         "Let(Ignore, Ret(Sym(Num(1))), Let(Ignore, Ret(Sym(Id(\"a\"))), Ret(Num(0))))",
-    );
+    )
+    .unwrap();
 
     check_exp("let _ = ret $a-1; let _ = ret $a.1; ret 0",
-              "Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Ret(Num(0))))");
+              "Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dash, Num(1)))), Let(Ignore, Ret(Sym(Tri(Id(\"a\"), Dot, Num(1)))), Ret(Num(0))))").unwrap();
 
     check_exp("let _ = ret $a_1-b_2.c; ret 0",
-              "Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))");
+              "Let(Ignore, Ret(Sym(Tri(Id(\"a_1\"), Dash, Tri(Id(\"b_2\"), Dot, Id(\"c\"))))), Ret(Num(0)))").unwrap();
 }
 
 #[test]
@@ -196,10 +201,17 @@ fn test_let_box() {
     let ast = "LetBx(Var(\"f\"), Ret(Bx(BxVal { bxes: {}, name: None, code: Lambda(Var(\"x\"), Lambda(Var(\"y\"), Put(Var(\"x\"), Var(\"y\")))) })), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))";
 
     // box f contains code that, when given a symbol and a value, puts the value at that symbol.
-    check_exp("let box f = ret {\\x => \\y => x := y}; f $a 1", ast);
+    check_exp("let box f = ret {\\x => \\y => x := y}; f $a 1", ast).unwrap();
 
     // the "ret" keyword is optional when we give a literal box value
-    check_exp("let box f = {\\x => \\y => x := y}; f $a 1", ast);
+    check_exp("let box f = {\\x => \\y => x := y}; f $a 1", ast).unwrap();
+}
+
+#[test]
+fn test_put_link() {
+    check_exp_("let _ = $s := 42; &$s",
+               None,
+               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"s\")) })} }")).unwrap()
 }
 
 #[test]
@@ -220,7 +232,7 @@ fn test_net_put_link_get() {
          being a { !a-x }
       || being b { 137 }
         "##,
-    );
+    )
 }
 
 #[test]
@@ -228,7 +240,7 @@ fn test_cbpv_convert() {
     check_exp_(
         "box id3 {\\x => \\y => \\z => ret x}; box one {ret 1}; box two {ret 2}; box three {ret 3}; id3 `(one) `(two) `(three)",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }"));
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")).unwrap();
 }
 
 /// Fumola tools
