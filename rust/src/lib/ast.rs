@@ -125,7 +125,7 @@ pub enum BinOp {
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
-    use super::{BxVal, BxesEnv, Exp, Id, Pat, Sym, Val};
+    use super::{BxesEnv, Exp, Id, Pat, Sym, Val};
 
     /// Net surface syntax produces an ast-like structure
     /// to represent an initial net.

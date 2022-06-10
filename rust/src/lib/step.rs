@@ -3,7 +3,7 @@ use crate::ast::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
         ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
     },
-    Branch, Branches, BxVal, Case, Cases, Exp, Pat, Sym, Val, ValField,
+    Branch, Branches, Case, Cases, Exp, Pat, Sym, Val, ValField,
 };
 
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
             *proc = pr;
             Err(())
         }
-        Proc::Spawn(mut e) => {
+        Proc::Spawn(e) => {
             *proc = Proc::Running(Running {
                 env: Env {
                     vals: HashMap::new(),
@@ -50,7 +50,7 @@ pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
     }
 }
 
-pub fn value_field(env: &Env, value_field: &ValField) -> Result<ValField, ValueError> {
+pub fn value_field(_env: &Env, _value_field: &ValField) -> Result<ValField, ValueError> {
     unimplemented!()
 }
 
@@ -121,23 +121,23 @@ pub fn head(e: &Exp) -> Exp {
         Link(v) => Link(v.clone()),
         Ret(v) => Ret(v.clone()),
         Switch(v, c) => Switch(v.clone(), head_cases(c)),
-        Let(pat, e1, e2) => Let(pat.clone(), hole(), hole()),
-        LetBx(pat, e1, e2) => LetBx(pat.clone(), hole(), hole()),
+        Let(pat, _e1, _e2) => Let(pat.clone(), hole(), hole()),
+        LetBx(pat, _e1, _e2) => LetBx(pat.clone(), hole(), hole()),
         Extract(v) => Extract(v.clone()),
         Hole => Hole,
-        App(e1, v) => App(hole(), v.clone()),
-        Project(e, v) => Project(hole(), v.clone()),
+        App(_e1, v) => App(hole(), v.clone()),
+        Project(_e, v) => Project(hole(), v.clone()),
         Branches(b) => Branches(head_branches(b)),
         AssertEq(v1, b, v2) => AssertEq(v1.clone(), *b, v2.clone()),
     }
 }
 
-pub fn head_branches(b: &Branches) -> Branches {
+pub fn head_branches(_b: &Branches) -> Branches {
     // to do -- for each branch case, keep pattern and hole the body.
     Branches::Empty
 }
 
-pub fn head_cases(c: &Cases) -> Cases {
+pub fn head_cases(_c: &Cases) -> Cases {
     // to do -- for each branch case, keep pattern and hole the body.
     Cases::Empty
 }
@@ -169,7 +169,7 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
     use Val::*;
     let h = head(&r.cont);
     println!("running({{cont = {:?}, ...}})", h);
-    let mut cont = replace(&mut r.cont, h);
+    let cont = replace(&mut r.cont, h);
     match cont {
         Hole => Err(Error::Internal(InternalError::Hole)),
         Ret(v) => {
@@ -252,7 +252,7 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
             r.cont = *e1;
             Ok(())
         }
-        LetBx(_, e1, e2) => unimplemented!(),
+        LetBx(_, _e1, _e2) => unimplemented!(),
         Extract(Var(x)) => {
             let bxo = r.env.bxes.get(&x);
             let bx = bxo
@@ -427,16 +427,4 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
     } else {
         return Err(Error::NoStep);
     }
-}
-
-#[derive(Debug)]
-pub enum ProcStatus {
-    Stepping,
-    Linking,
-    Halted,
-    Error(Error),
-}
-
-pub fn get_status(sym: &Sym, sys: &System) -> ProcStatus {
-    unimplemented!()
 }

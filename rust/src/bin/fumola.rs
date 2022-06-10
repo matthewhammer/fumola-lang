@@ -54,7 +54,7 @@ fn check_exp_(input: &str, ast: Option<&str>, final_sys: Option<&str>) -> Result
     loop {
         match fumola::step::system(&mut sys) {
             Ok(()) => (),
-            Err(e) => break,
+            Err(_e) => break,
         }
     }
     println!("final system:\n{:?}", &sys);
@@ -290,7 +290,7 @@ fn main() -> OurResult<()> {
     info!("Evaluating CLI command: {:?} ...", &cli_opt.command);
     let () = match cli_opt.command {
         CliCommand::Check { input: i } => {
-            check_exp_(i.as_str(), None, None);
+            check_exp_(i.as_str(), None, None).unwrap();
         }
         CliCommand::Completions { shell: s } => {
             // see also: https://clap.rs/effortless-auto-completion/

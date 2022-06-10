@@ -32,7 +32,6 @@ fn value<I: Iterator<Item = String>>(
     bindings: &mut Bindings,
     v: &Val,
 ) -> Result<Val, ()> {
-    use Exp::*;
     use Val::*;
     match v {
         CallByValue(e) => {
@@ -47,10 +46,8 @@ fn value<I: Iterator<Item = String>>(
             name: bx.name.clone(),
             code: convert(free_vars, &bx.code)?,
         }))),
-        Record(r) => unimplemented!(),
-        RecordExt(v1, v2) => {
-            unimplemented!()
-        }
+        Record(_r) => unimplemented!(),
+        RecordExt(_v1, _v2) => unimplemented!(),
         Variant(v1, v2) => Ok(Variant(
             Box::new(value(free_vars, bindings, v1)?),
             Box::new(value(free_vars, bindings, v2)?),
@@ -110,7 +107,6 @@ fn expression<I: Iterator<Item = String>>(
     e: &Exp,
 ) -> Result<Exp, ()> {
     use Exp::*;
-    use Val::*;
     match e {
         Hole => Ok(Hole),
         Extract(v) => {
