@@ -247,12 +247,22 @@ fn test_open_link() {
                Some("System { store: {}, trace: [], procs: {None: Waiting(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Sym(Id(\"s\"))), trace: [] }, Id(\"s\"))} }")).unwrap()
 }
 
+// to do -- need a canonical (sorted) order for procs and vars
+
 #[test]
 fn test_spawn() {
     check_exp_(
         "~$x { ret 1 }",
         None,
-        Some("System { store: {Id(\"x\"): Proc(Id(\"x\"))}, trace: [], procs: {None: Halted(Halted { retval: Proc(Id(\"x\")) }), Id(\"x\"): Halted(Halted { retval: Num(1) })} }")).unwrap()
+        None).unwrap()
+}
+
+#[test]
+fn test_nest_spawn() {
+    check_exp_(
+        "#$n{ ~$x { ret 1 } }",
+        None,
+        None).unwrap()
 }
 
 #[test]
@@ -260,7 +270,7 @@ fn test_let_spawn() {
     check_exp_(
         "let r = ret 1 ; ~$x { ret r }",
         None,
-        Some("System { store: {Id(\"x\"): Proc(Id(\"x\"))}, trace: [], procs: {Id(\"x\"): Halted(Halted { retval: Num(1) }), None: Halted(Halted { retval: Proc(Id(\"x\")) })} }")).unwrap()
+        None).unwrap()
 }
 
 #[test]
