@@ -12,6 +12,8 @@ pub enum Exp {
     App(Box<Exp>, Val),
     Let(Pat, Box<Exp>, Box<Exp>),
     Ret(Val),
+    /// Ret_ is like Ret, but without surface syntax, and only used internally.
+    Ret_(Val),
     Switch(Val, Cases),
     Branches(Branches),
     Project(Box<Exp>, Val),
@@ -156,9 +158,8 @@ pub mod step {
 
     #[derive(Debug, Clone)]
     pub enum Trace {
-        Proc(Sym, Box<Trace>),
         Seq(Vec<Trace>),
-        Nest(Sym, Box<Trace>),
+        Nest(Sym, Vec<Trace>),
         Ret(Val),
         Put(Sym, Val),
         Get(Sym, Val),
@@ -250,8 +251,11 @@ pub mod step {
         /// Dynamically-determined type mismatch.
         NoStep,
 
-        /// Value is not a symbol.
+        /// Value is not a symbol (invalid put, nest, spawn).
         NotASymbol(Val),
+
+        /// Value is not a pointer (invalid get).
+        NotAPointer(Val),
 
         /// Symbol is not defined in the store.
         Undefined(Sym),
@@ -308,6 +312,7 @@ pub mod step {
 
     #[derive(Debug, Clone)]
     pub struct Halted {
+        pub trace: Vec<Trace>,
         pub retval: Val,
     }
 

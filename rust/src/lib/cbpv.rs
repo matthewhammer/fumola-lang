@@ -108,6 +108,7 @@ fn expression<I: Iterator<Item = String>>(
 ) -> Result<Exp, ()> {
     use Exp::*;
     match e {
+        Ret_(_) => unreachable!(),
         Hole => Ok(Hole),
         Extract(v) => {
             let v = value(free_vars, bindings, v)?;

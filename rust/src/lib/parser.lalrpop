@@ -14,8 +14,7 @@ pub Trace: Trace = {
 }
 
 pub TraceHd: Trace = {
-    "proc" <s:Sym> "{" <t:Trace> "}" => Trace::Proc(s, Box::new(t)),
-    "nest" <s:Sym> "{" <t:Trace> "}" => Trace::Nest(s, Box::new(t)),
+    "nest" <s:Sym> "{" <t:Trace> "}" => Trace::Nest(s, vec![t]),
     "ret" <v:Val> => Trace::Ret(v),
     "put" <s:Sym> "<=" <v:Val> => Trace::Put(s, v),
     "get" <s:Sym> "=>" <v:Val> => Trace::Get(s, v),

@@ -55,7 +55,10 @@ pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) ->
                 Ok(())
             }
             Err(Error::Signal(Signal::Halt(v))) => {
-                *proc = Proc::Halted(Halted { retval: v });
+                *proc = Proc::Halted(Halted {
+                    retval: v,
+                    trace: r.trace,
+                });
                 Ok(())
             }
             Err(Error::Signal(Signal::LinkWait(s))) => {
@@ -154,6 +157,7 @@ pub fn head(e: &Exp) -> Exp {
         Get(v) => Get(v.clone()),
         Link(v) => Link(v.clone()),
         Ret(v) => Ret(v.clone()),
+        Ret_(v) => Ret_(v.clone()),
         Switch(v, c) => Switch(v.clone(), head_cases(c)),
         Let(pat, _e1, _e2) => Let(pat.clone(), hole(), hole()),
         LetBx(pat, _e1, _e2) => LetBx(pat.clone(), hole(), hole()),
@@ -183,6 +187,13 @@ pub fn into_symbol(v: Val) -> Result<Sym, Error> {
     }
 }
 
+pub fn into_pointer(v: Val) -> Result<Sym, Error> {
+    match v {
+        Val::Ptr(s) => Ok(s),
+        _ => Err(Error::NotAPointer(v)),
+    }
+}
+
 pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
     let mut r = s;
     for fr in stack.iter().rev() {
@@ -192,6 +203,19 @@ pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
         }
     }
     r
+}
+
+/// Empty stack means halting program.  We trace the halting return.
+/// Stack with nest on top means we trace the return from the nest.
+pub fn stack_says_trace_ret(stack: &Stack) -> bool {
+    if stack.len() == 0 {
+        true
+    } else {
+        match stack.last().unwrap().cont {
+            FrameCont::Nest(_) => true,
+            _ => false,
+        }
+    }
 }
 
 /// step a running process.
@@ -208,28 +232,28 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
         Hole => Err(Error::Internal(InternalError::Hole)),
         Ret(v) => {
             let v = value(&r.env, &v)?;
+            if stack_says_trace_ret(&r.stack) {
+                r.trace.push(Trace::Ret(v.clone()));
+            };
+            r.cont = Ret_(v);
+            running(store, r)
+        }
+        Ret_(v) => {
             if r.stack.len() == 0 {
                 Err(Error::Signal(Signal::Halt(v)))
             } else {
                 let fr = r
                     .stack
-                    .last()
-                    .ok_or(Error::Internal(InternalError::Impossible))?
-                    .clone();
+                    .pop()
+                    .ok_or(Error::Internal(InternalError::Impossible))?;
                 match fr.cont {
                     FrameCont::App(_) | FrameCont::Project(_) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
-                        r.stack
-                            .pop()
-                            .ok_or(Error::Internal(InternalError::Impossible))?;
                         let tr = replace(&mut r.trace, fr.trace);
-                        r.trace.push(Trace::Nest(s, Box::new(Trace::Seq(tr))));
+                        r.trace.push(Trace::Nest(s, tr));
                         Ok(())
                     }
                     FrameCont::Let(mut env0, pat, e1) => {
-                        r.stack
-                            .pop()
-                            .ok_or(Error::Internal(InternalError::Impossible))?;
                         pattern(&pat, v, &mut env0)?;
                         let _ = replace(&mut r.env, env0);
                         let _ = replace(&mut r.cont, e1);
@@ -239,9 +263,6 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                     }
                     FrameCont::LetBx(env0, Pat::Var(x), e1) => {
                         if let Bx(bv) = v {
-                            r.stack
-                                .pop()
-                                .ok_or(Error::Internal(InternalError::Impossible))?;
                             let _ = replace(&mut r.env, env0);
                             let _ = replace(&mut r.cont, e1);
                             let mut tr = replace(&mut r.trace, fr.trace);
@@ -261,7 +282,7 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                 let s = put_symbol(&r.stack, s);
                 match store.get(&s) {
                     None => {
-                        r.cont = Ret(Val::Proc(s.clone()));
+                        r.cont = Ret_(Val::Proc(s.clone()));
                         Err(Error::Signal(Signal::Spawn(s, r.env.clone(), *e)))
                     }
                     Some(_) => Err(Error::Duplicate(s)),
@@ -382,18 +403,18 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
             let sym = put_symbol(&r.stack, sym);
             r.trace.push(Trace::Put(sym.clone(), v2.clone()));
             store.insert(sym.clone(), v2);
-            r.cont = Ret(Sym(sym));
+            r.cont = Ret_(Ptr(sym));
             Ok(())
         }
         Get(v) => {
             let v1 = value(&r.env, &v)?;
-            let sym = into_symbol(v1)?;
+            let sym = into_pointer(v1)?;
             let v2 = match store.get(&sym) {
                 None => return Err(Error::Undefined(sym)),
                 Some(v2) => v2.clone(),
             };
             r.trace.push(Trace::Get(sym.clone(), v2.clone()));
-            r.cont = Ret(v2);
+            r.cont = Ret_(v2);
             Ok(())
         }
         Switch(v, cases) => {
@@ -420,8 +441,8 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                 }
                 Some(_) => {
                     r.trace
-                        .push(Trace::Link(Val::Sym(sym.clone()), Val::Sym(sym.clone())));
-                    r.cont = Ret(Val::Sym(sym));
+                        .push(Trace::Link(Val::Sym(sym.clone()), Val::Ptr(sym.clone())));
+                    r.cont = Ret_(Val::Ptr(sym));
                     Ok(())
                 }
             }

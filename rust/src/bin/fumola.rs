@@ -75,11 +75,47 @@ fn check_net(initial: &str, halted: &str) {
 }
 
 #[test]
+fn test_ret() {
+    check_exp_(
+        "ret 1",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
+    ).unwrap();
+}
+
+#[test]
+fn test_let_ret() {
+    check_exp_(
+        "let x = ret 1; ret x",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
+    ).unwrap();
+}
+
+#[test]
+fn test_let_let_ret() {
+    check_exp_(
+        "let x = let y = ret 1; ret y; ret x",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
+    ).unwrap();
+}
+
+#[test]
+fn test_let_nest_ret() {
+    check_exp_(
+        "let x = #$n { ret 1 }; ret x",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Ret(Num(1))]), Ret(Num(1))], retval: Num(1) })} }")
+    ).unwrap();
+}
+
+#[test]
 fn test_put() {
     check_exp_(
         "$a := 1",
         None,
-        Some("System { store: {Id(\"a\"): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"a\")) })} }")
+        Some("System { store: {Id(\"a\"): Num(1)}, trace: [], procs: {None: Halted(Halted { trace: [Put(Id(\"a\"), Num(1))], retval: Ptr(Id(\"a\")) })} }")
     ).unwrap();
 }
 
@@ -88,7 +124,7 @@ fn test_nest_put() {
     check_exp_(
         "#$n { $a := 1 }",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }")
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(1))])], retval: Ptr(Nest(Id(\"n\"), Id(\"a\"))) })} }")
     ).unwrap();
 }
 
@@ -106,7 +142,7 @@ fn test_nest_put_get() {
     check_exp_(
         "let x = #$n{ $a := 3 }; @x",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { retval: Num(3) })} }")).unwrap();
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(3)), Ret(Ptr(Nest(Id(\"n\"), Id(\"a\"))))]), Ret(Ptr(Nest(Id(\"n\"), Id(\"a\")))), Get(Nest(Id(\"n\"), Id(\"a\")), Num(3))], retval: Num(3) })} }")).unwrap();
 }
 
 #[test]
@@ -114,7 +150,7 @@ fn test_get_undef() {
     check_exp_(
         "@$s",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Get(Sym(Id(\"s\"))), trace: [] }, Undefined(Id(\"s\")))} }")).unwrap();
+        Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Get(Sym(Id(\"s\"))), trace: [] }, NotAPointer(Sym(Id(\"s\"))))} }")).unwrap();
 }
 
 #[test]
@@ -131,7 +167,7 @@ fn test_nest() {
     check_exp_(
         "# $311 { ret 311 }",
         Some("Nest(Sym(Num(311)), Ret(Num(311)))"),
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(311) })} }"),
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Num(311), [Ret(Num(311))])], retval: Num(311) })} }"),
     )
     .unwrap();
 }
@@ -162,7 +198,7 @@ fn test_project_branches() {
     check_exp_(
 	      "{ $apple => ret 1; $banana => \\x => x := x } <= $apple",
 	      Some("Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"),
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
     ).unwrap();
 }
 
@@ -237,7 +273,7 @@ fn test_put_link() {
 fn test_put_link_get() {
     check_exp_("let _ = $s := 42; @`(&$s)",
                None,
-               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { retval: Num(42) })} }")).unwrap()
+               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { trace: [Put(Id(\"s\"), Num(42)), Link(Sym(Id(\"s\")), Ptr(Id(\"s\"))), Get(Id(\"s\"), Num(42))], retval: Num(42) })} }")).unwrap()
 }
 
 #[test]
@@ -251,26 +287,17 @@ fn test_open_link() {
 
 #[test]
 fn test_spawn() {
-    check_exp_(
-        "~$x { ret 1 }",
-        None,
-        None).unwrap()
+    check_exp_("~$x { ret 1 }", None, None).unwrap()
 }
 
 #[test]
 fn test_nest_spawn() {
-    check_exp_(
-        "#$n{ ~$x { ret 1 } }",
-        None,
-        None).unwrap()
+    check_exp_("#$n{ ~$x { ret 1 } }", None, None).unwrap()
 }
 
 #[test]
 fn test_let_spawn() {
-    check_exp_(
-        "let r = ret 1 ; ~$x { ret r }",
-        None,
-        None).unwrap()
+    check_exp_("let r = ret 1 ; ~$x { ret r }", None, None).unwrap()
 }
 
 #[test]
