@@ -252,7 +252,15 @@ fn test_spawn() {
     check_exp_(
         "~$x { ret 1 }",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }")).unwrap()
+        Some("System { store: {Id(\"x\"): Proc(Id(\"x\"))}, trace: [], procs: {None: Halted(Halted { retval: Proc(Id(\"x\")) }), Id(\"x\"): Halted(Halted { retval: Num(1) })} }")).unwrap()
+}
+
+#[test]
+fn test_let_spawn() {
+    check_exp_(
+        "let r = ret 1 ; ~$x { ret r }",
+        None,
+        Some("System { store: {Id(\"x\"): Proc(Id(\"x\"))}, trace: [], procs: {Id(\"x\"): Halted(Halted { retval: Num(1) }), None: Halted(Halted { retval: Proc(Id(\"x\")) })} }")).unwrap()
 }
 
 #[test]
