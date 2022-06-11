@@ -244,7 +244,7 @@ fn test_let_box_syntax() {
 fn test_let_box() {
     // box 'put_' contains code that, when given a symbol and a value,
     // puts the value at that symbol.
-    let result = "System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }";
+    let result = "System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(1))])], retval: Ptr(Nest(Id(\"n\"), Id(\"a\"))) })} }";
 
     check_exp_(
         "let box put_ = ret {\\x => \\y => x := y}; #$n { put_ $a 1 }",
