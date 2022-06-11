@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
-pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
+pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) -> Result<(), ()> {
     let pr = std::mem::replace(proc, Proc::Spawn(Exp::Hole));
     match pr {
         Proc::Error(_, _) => {
@@ -60,6 +60,19 @@ pub fn proc(store: &mut Store, proc: &mut Proc) -> Result<(), ()> {
             }
             Err(Error::Signal(Signal::LinkWait(s))) => {
                 *proc = Proc::Waiting(r.clone(), s);
+                Ok(())
+            }
+            Err(Error::Signal(Signal::Spawn(s, env, cont))) => {
+                spawn.push((
+                    s,
+                    Proc::Running(Running {
+                        env,
+                        trace: vec![],
+                        stack: vec![],
+                        cont,
+                    }),
+                ));
+                *proc = Proc::Running(r.clone());
                 Ok(())
             }
             Err(err) => {
@@ -135,6 +148,7 @@ pub fn head(e: &Exp) -> Exp {
     }
     match e {
         Nest(v, _) => Nest(v.clone(), hole()),
+        Spawn(v, _) => Spawn(v.clone(), hole()),
         Lambda(pat, _) => Lambda(pat.clone(), hole()),
         Put(v1, v2) => Put(v1.clone(), v2.clone()),
         Get(v) => Get(v.clone()),
@@ -242,6 +256,19 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                 }
             }
         }
+        Spawn(v, e) => match value(&r.env, &v)? {
+            Sym(s) => {
+                let s = put_symbol(&r.stack, s);
+                match store.get(&s) {
+                    None => {
+                        r.cont = Ret(Val::Proc(s.clone()));
+                        Err(Error::Signal(Signal::Spawn(s, r.env.clone(), *e)))
+                    }
+                    Some(_) => Err(Error::Duplicate(s)),
+                }
+            }
+            _ => Err(Error::NoStep),
+        },
         Nest(v, e) => match value(&r.env, &v)? {
             Sym(s) => {
                 let trace = replace(&mut r.trace, vec![]);
@@ -453,11 +480,22 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
         return Err(Error::NoProcs);
     }
     let mut stepped = false;
+    let mut spawned = vec![];
     for (_, p) in sys.procs.iter_mut() {
-        match proc(&mut sys.store, p) {
+        let mut spawn = vec![];
+        match proc(&mut sys.store, p, &mut spawn) {
             Ok(()) => stepped = true,
             Err(()) => (),
+        };
+        for (s, p) in spawn.into_iter() {
+            let prior = sys.store.insert(s.clone(), Val::Proc(s.clone()));
+            spawned.push((s, p));
+            assert!(prior.is_none());
         }
+    }
+    for (s, p) in spawned.into_iter() {
+        let prior = sys.procs.insert(s, p);
+        assert!(prior.is_none());
     }
     if stepped {
         return Ok(());

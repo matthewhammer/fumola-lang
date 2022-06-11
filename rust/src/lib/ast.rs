@@ -3,6 +3,7 @@ pub type Span = std::ops::Range<usize>;
 #[derive(Debug, Clone)]
 pub enum Exp {
     Nest(Val, Box<Exp>),
+    Spawn(Val, Box<Exp>),
     Put(Val, Val),
     Get(Val),
     Link(Val),
@@ -199,6 +200,8 @@ pub mod step {
         /// Process is waiting to link to a symbol not yet in the store,
         /// (or a process not yet terminated with a return value).
         LinkWait(Sym),
+        /// Process is spawning another process with given name, env and body.
+        Spawn(Sym, Env, Exp),
     }
 
     /// Fumola implementation errors.

@@ -121,6 +121,10 @@ fn expression<I: Iterator<Item = String>>(
             let v = value(free_vars, bindings, v)?;
             Ok(Nest(v, expression_(free_vars, bindings, e)?))
         }
+        Spawn(v, e) => {
+            let v = value(free_vars, bindings, v)?;
+            Ok(Spawn(v, expression_(free_vars, bindings, e)?))
+        }
         App(e, v) => {
             let v = value(free_vars, bindings, v)?;
             Ok(App(expression_(free_vars, bindings, e)?, v))

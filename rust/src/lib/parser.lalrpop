@@ -58,6 +58,7 @@ pub ExpHd: Exp = {
     "switch" <v:Val> "{" <c:Cases> "}" => Exp::Switch(v, c),
     "\\" <p:Pat> "=>" <e:ExpBox> => Exp::Lambda(p, e),
     "#" <v:Val> "{" <e:ExpBox> "}" => Exp::Nest(v, e),
+    "~" <v:Val> "{" <e:ExpBox> "}" => Exp::Spawn(v, e),
     <v1:Val> ":=" <v2:Val> => Exp::Put(v1, v2),
     "@" <v1:Val> => Exp::Get(v1),
     "&" <v1:Val> => Exp::Link(v1),

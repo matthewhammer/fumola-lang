@@ -248,6 +248,14 @@ fn test_open_link() {
 }
 
 #[test]
+fn test_spawn() {
+    check_exp_(
+        "~$x { ret 1 }",
+        None,
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Nest(Id(\"n\"), Id(\"a\"))) })} }")).unwrap()
+}
+
+#[test]
 fn test_net_put_link_get() {
     // By linking, doing b awaits the final result of first doing a.
     // doing a produces an address !a-x written with 137, which doing b
