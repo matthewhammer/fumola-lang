@@ -117,14 +117,6 @@ pub struct Case {
     pub body: Box<Exp>,
 }
 
-#[derive(Debug, Clone)]
-pub enum BinOp {
-    Mul,
-    Div,
-    Add,
-    Sub,
-}
-
 /// Syntactic forms for representing the intermediate state of dynamic
 /// evaluation.
 pub mod step {
