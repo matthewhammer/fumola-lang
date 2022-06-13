@@ -66,14 +66,6 @@ fn check_exp(input: &str, ast: &str) -> Result<(), ()> {
     check_exp_(input, Some(ast), None)
 }
 
-fn check_net(initial: &str, halted: &str) {
-    let initial = fumola::parser::NetParser::new().parse(initial).unwrap();
-    let halted = fumola::parser::TraceNetParser::new().parse(halted).unwrap();
-    // to do -- run ast and check final config against halted
-    println!("initial = {:?}", initial);
-    println!("halted = {:?}", halted);
-}
-
 #[test]
 fn test_ret() {
     check_exp_(
@@ -142,7 +134,7 @@ fn test_nest_put_get() {
     check_exp_(
         "let x = #$n{ $a := 3 }; @x",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(3)), Ret(Ptr(Nest(Id(\"n\"), Id(\"a\"))))]), Ret(Ptr(Nest(Id(\"n\"), Id(\"a\")))), Get(Nest(Id(\"n\"), Id(\"a\")), Num(3))], retval: Num(3) })} }")).unwrap();
+        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(3))]), Get(Nest(Id(\"n\"), Id(\"a\")), Num(3))], retval: Num(3) })} }")).unwrap();
 }
 
 #[test]
@@ -207,7 +199,7 @@ fn test_let_switch() {
     check_exp_(
         "let a = ret $apple; switch #a(1) { #a(x){ret x}; #$banana(x){ret x} }",
         Some("Let(Var(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }))))"),
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
     ).unwrap();
 }
 
@@ -266,7 +258,7 @@ fn test_let_box() {
 fn test_put_link() {
     check_exp_("let _ = $s := 42; &$s",
                None,
-               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { retval: Sym(Id(\"s\")) })} }")).unwrap()
+               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { trace: [Put(Id(\"s\"), Num(42)), Link(Sym(Id(\"s\")), Ptr(Id(\"s\")))], retval: Ptr(Id(\"s\")) })} }")).unwrap()
 }
 
 #[test]
@@ -301,32 +293,11 @@ fn test_let_spawn() {
 }
 
 #[test]
-fn test_net_put_link_get() {
-    // By linking, doing b awaits the final result of first doing a.
-    // doing a produces an address !a-x written with 137, which doing b
-    // reads and returns as its result.
-
-    // not sure about the "!" syntax for raw, global addresses.
-    check_net(
-        "doing a { $x := 137 } || doing b { @`(@`(&$a)) }",
-        r##"
-        proc a { put a-x <= 137 };
-        proc b { link $a => ~a;
-                 get a => !a-x;
-                 get a-x => 137 }
-        ;;
-         being a { !a-x }
-      || being b { 137 }
-        "##,
-    )
-}
-
-#[test]
 fn test_cbpv_convert() {
     check_exp_(
         "box id3 {\\x => \\y => \\z => ret x}; box one {ret 1}; box two {ret 2}; box three {ret 3}; id3 `(one) `(two) `(three)",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { retval: Num(1) })} }")).unwrap();
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")).unwrap();
 }
 
 /// Fumola tools
