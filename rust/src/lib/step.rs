@@ -1,7 +1,7 @@
 use crate::ast::{
     step::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
-        ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
+        Procs, ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
     },
     Branch, Branches, Case, Cases, Exp, Pat, Sym, Val, ValField,
 };
@@ -10,7 +10,12 @@ use std::collections::HashMap;
 
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
-pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) -> Result<(), ()> {
+pub fn proc(
+    procs: &Procs,
+    store: &mut Store,
+    proc: &mut Proc,
+    spawn: &mut Vec<(Sym, Proc)>,
+) -> Result<(), ()> {
     let pr = std::mem::replace(proc, Proc::Spawn(Exp::Hole));
     match pr {
         Proc::Error(_, _) => {
@@ -33,7 +38,7 @@ pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) ->
             });
             Ok(())
         }
-        Proc::Waiting(_, ref s) => match store.get(s) {
+        Proc::WaitingForPtr(_, ref s) => match store.get(s) {
             None => {
                 *proc = pr;
                 Err(())
@@ -41,7 +46,7 @@ pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) ->
             Some(_) => {
                 fn resume(pr: Proc) -> Proc {
                     match pr {
-                        Proc::Waiting(r, _) => Proc::Running(r),
+                        Proc::WaitingForPtr(r, _) => Proc::Running(r),
                         _ => unreachable!(),
                     }
                 }
@@ -49,7 +54,32 @@ pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) ->
                 Ok(())
             }
         },
-        Proc::Running(mut r) => match running(store, &mut r) {
+        Proc::WaitingForHalt(_, ref s) => match procs.get(s) {
+            None => {
+                *proc = match pr {
+                    Proc::WaitingForHalt(r, _) => Proc::Error(r, Error::InvalidProc(s.clone())),
+                    _ => unreachable!(),
+                };
+                Ok(())
+            }
+            Some(Proc::Halted(halted)) => {
+                *proc = match pr {
+                    Proc::WaitingForHalt(mut r, sym) => {
+                        let v = halted.retval.clone();
+                        r.cont = Exp::Ret_(v.clone());
+                        r.trace.push(Trace::Link(Val::Proc(sym.clone()), v));
+                        Proc::Running(r)
+                    }
+                    _ => unreachable!(),
+                };
+                Ok(())
+            }
+            Some(_) => {
+                *proc = pr;
+                Err(())
+            }
+        },
+        Proc::Running(mut r) => match running(procs, store, &mut r) {
             Ok(()) => {
                 *proc = Proc::Running(r);
                 Ok(())
@@ -61,8 +91,12 @@ pub fn proc(store: &mut Store, proc: &mut Proc, spawn: &mut Vec<(Sym, Proc)>) ->
                 });
                 Ok(())
             }
-            Err(Error::Signal(Signal::LinkWait(s))) => {
-                *proc = Proc::Waiting(r.clone(), s);
+            Err(Error::Signal(Signal::LinkWaitPtr(s))) => {
+                *proc = Proc::WaitingForPtr(r.clone(), s);
+                Ok(())
+            }
+            Err(Error::Signal(Signal::LinkWaitHalt(s))) => {
+                *proc = Proc::WaitingForHalt(r.clone(), s);
                 Ok(())
             }
             Err(Error::Signal(Signal::Spawn(s, env, cont))) => {
@@ -220,7 +254,7 @@ pub fn stack_says_trace_ret(stack: &Stack) -> bool {
 
 /// step a running process.
 /// returns None if already Blocked.
-pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
+pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), Error> {
     // for each Exp form, step it, possibly to an Error.
     use std::mem::replace;
     use Exp::*;
@@ -236,7 +270,7 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
                 r.trace.push(Trace::Ret(v.clone()));
             };
             r.cont = Ret_(v);
-            running(store, r)
+            running(procs, store, r)
         }
         Ret_(v) => {
             if r.stack.len() == 0 {
@@ -432,19 +466,21 @@ pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
         }
         Link(v1) => {
             let v1 = value(&r.env, &v1)?;
-            // to do -- generalize: link generally chooses among several options.
-            let sym = into_symbol(v1)?; // to do -- also handle symbol sets, sequences.
-            match store.get(&sym) {
-                None => {
-                    r.cont = Link(Val::Sym(sym.clone()));
-                    Err(Error::Signal(Signal::LinkWait(sym)))
-                }
-                Some(_) => {
-                    r.trace
-                        .push(Trace::Link(Val::Sym(sym.clone()), Val::Ptr(sym.clone())));
-                    r.cont = Ret_(Val::Ptr(sym));
-                    Ok(())
-                }
+            match v1 {
+                Val::Sym(sym) => match store.get(&sym) {
+                    None => {
+                        r.cont = Link(Val::Sym(sym.clone()));
+                        Err(Error::Signal(Signal::LinkWaitPtr(sym)))
+                    }
+                    Some(_) => {
+                        r.trace
+                            .push(Trace::Link(Val::Sym(sym.clone()), Val::Ptr(sym.clone())));
+                        r.cont = Ret_(Val::Ptr(sym));
+                        Ok(())
+                    }
+                },
+                Val::Proc(s) => Err(Error::Signal(Signal::LinkWaitHalt(s))),
+                v1 => Err(Error::NotLinkTarget(v1)),
             }
         }
         // To do
@@ -502,18 +538,22 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
     }
     let mut stepped = false;
     let mut spawned = vec![];
-    for (_, p) in sys.procs.iter_mut() {
+    let mut next_procs = HashMap::new();
+    for (s, p) in sys.procs.iter() {
         let mut spawn = vec![];
-        match proc(&mut sys.store, p, &mut spawn) {
+        let mut p = p.clone(); // to do -- somehow avoid this clone.
+        match proc(&sys.procs, &mut sys.store, &mut p, &mut spawn) {
             Ok(()) => stepped = true,
             Err(()) => (),
         };
+        next_procs.insert(s.clone(), p);
         for (s, p) in spawn.into_iter() {
             let prior = sys.store.insert(s.clone(), Val::Proc(s.clone()));
             spawned.push((s, p));
             assert!(prior.is_none());
         }
     }
+    sys.procs = next_procs;
     for (s, p) in spawned.into_iter() {
         let prior = sys.procs.insert(s, p);
         assert!(prior.is_none());

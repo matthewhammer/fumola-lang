@@ -191,8 +191,9 @@ pub mod step {
         /// Process has successfully produced a final return value.
         Halt(Val),
         /// Process is waiting to link to a symbol not yet in the store,
-        /// (or a process not yet terminated with a return value).
-        LinkWait(Sym),
+        LinkWaitPtr(Sym),
+        /// Process is waiting to link to another process to halt.
+        LinkWaitHalt(Sym),
         /// Process is spawning another process with given name, env and body.
         Spawn(Sym, Env, Exp),
     }
@@ -249,6 +250,12 @@ pub mod step {
         /// Value is not a pointer (invalid get).
         NotAPointer(Val),
 
+        /// Invalid process symbol. Not yet in store.
+        InvalidProc(Sym),
+
+        /// Value is not a link target (not a symbol, not a process identifer).
+        NotLinkTarget(Val),
+
         /// Symbol is not defined in the store.
         Undefined(Sym),
 
@@ -289,7 +296,8 @@ pub mod step {
     pub enum Proc {
         Spawn(Exp),
         Running(Running),
-        Waiting(Running, Sym),
+        WaitingForPtr(Running, Sym),
+        WaitingForHalt(Running, Sym),
         Error(Running, Error),
         Halted(Halted),
     }

@@ -233,6 +233,11 @@ fn test_let_box_syntax() {
 }
 
 #[test]
+fn test_rec_box_syntax() {
+    check_exp_("box rec z { ret z }; z", None, Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Bx(BxVal { bxes: {}, name: Some(\"z\"), code: Ret(Var(\"z\")) }))], retval: Bx(BxVal { bxes: {}, name: Some(\"z\"), code: Ret(Var(\"z\")) }) })} }")).unwrap();
+}
+
+#[test]
 fn test_let_box() {
     // box 'put_' contains code that, when given a symbol and a value,
     // puts the value at that symbol.
@@ -269,10 +274,24 @@ fn test_put_link_get() {
 }
 
 #[test]
-fn test_open_link() {
+fn test_link_waiting_for_ptr() {
     check_exp_("&$s",
                None,
-               Some("System { store: {}, trace: [], procs: {None: Waiting(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Sym(Id(\"s\"))), trace: [] }, Id(\"s\"))} }")).unwrap()
+               Some("System { store: {}, trace: [], procs: {None: WaitingForPtr(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Sym(Id(\"s\"))), trace: [] }, Id(\"s\"))} }")).unwrap()
+}
+
+#[test]
+fn test_link_invalid_proc() {
+    check_exp_("&~s",
+               None,
+               Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Proc(Id(\"s\"))), trace: [] }, InvalidProc(Id(\"s\")))} }")).unwrap()
+}
+
+#[test]
+fn test_link_wait_for_halt() {
+    check_exp_("let p = ~$p { ret 42 }; &p",
+               None,
+               Some("System { store: {Id(\"p\"): Proc(Id(\"p\"))}, trace: [], procs: {None: Halted(Halted { trace: [Link(Proc(Id(\"p\")), Num(42))], retval: Num(42) }), Id(\"p\"): Halted(Halted { trace: [Ret(Num(42))], retval: Num(42) })} }")).unwrap()
 }
 
 // to do -- need a canonical (sorted) order for procs and vars

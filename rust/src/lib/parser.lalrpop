@@ -68,6 +68,7 @@ pub ExpHd: Exp = {
     "let" "box" <p:Pat> "=" <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
     "let" "box" <p:Pat> <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
     "box" <p:Pat> <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
+    "box" "rec" <id:Id> "{" <e:Exp> "}" ";" <e2:ExpBox> => Exp::LetBx(Pat::Var(id.clone()), Box::new(Exp::Ret(Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:Some(id), code:e})))), e2),
     "ret" <v:Val> => Exp::Ret(v),
     ExpApp,
 };
@@ -120,7 +121,8 @@ pub Val: Val = {
 };
 
 pub BxVal: Val = {
-   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:None, code:e}))
+   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:None, code:e})),
+   "rec" <id:Id> "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:Some(id), code:e}))
 }
 
 Num: i32 = {
