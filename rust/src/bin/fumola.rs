@@ -103,6 +103,26 @@ fn test_record_pattern() {
 }
 
 #[test]
+fn test_assert_equal_success() {
+    check_exp_("assert 1 == 1", None, Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [], retval: Record([]) })} }")).unwrap()
+}
+
+#[test]
+fn test_assert_equal_failure() {
+    check_exp_("assert 1 == 2", None, Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: AssertEq(Num(1), true, Num(2)), trace: [] }, AssertionFailure(Num(1), true, Num(2)))} }")).unwrap()
+}
+
+#[test]
+fn test_assert_not_equal_success() {
+    check_exp_("assert 1 != 2", None, Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [], retval: Record([]) })} }")).unwrap()
+}
+
+#[test]
+fn test_assert_not_equal_failure() {
+    check_exp_("assert 1 != 1", None, Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: AssertEq(Num(1), false, Num(1)), trace: [] }, AssertionFailure(Num(1), false, Num(1)))} }")).unwrap()
+}
+
+#[test]
 fn test_ret() {
     check_exp_(
         "ret 1",

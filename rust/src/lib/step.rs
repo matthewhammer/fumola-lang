@@ -506,11 +506,16 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
                 v1 => Err(Error::NotLinkTarget(v1)),
             }
         }
-        // To do
-        // ------
-
-        // AssertEq(Val, bool, Val),
-        _ => unimplemented!(),
+        AssertEq(v1, cond, v2) => {
+            let v1 = value(&r.env, &v1)?;
+            let v2 = value(&r.env, &v2)?;
+            if (v1 == v2) == cond {
+                r.cont = Ret_(Val::Record(vec![])); // use a special unit value instead?
+                Ok(())
+            } else {
+                Err(Error::AssertionFailure(v1, cond, v2))
+            }
+        }
     }
 }
 

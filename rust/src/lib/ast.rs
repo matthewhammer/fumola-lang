@@ -262,6 +262,9 @@ pub mod step {
         /// Duplicate process name.
         /// It is an error to name a spawned process a non-uniquely.
         Duplicate(Sym),
+
+        /// Assertion that v1 and v2 are equal (or not) equal failed.
+        AssertionFailure(Val, bool, Val),
     }
 
     #[derive(Debug, Clone)]
