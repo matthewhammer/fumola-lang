@@ -67,6 +67,42 @@ fn check_exp(input: &str, ast: &str) -> Result<(), ()> {
 }
 
 #[test]
+fn test_record_1() {
+    check_exp_(
+        "ret [$s => 1]",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }]))], retval: Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }]) })} }")
+    ).unwrap();
+}
+
+#[test]
+fn test_record_2() {
+    check_exp_(
+        "ret [$s => 1; $t => $two]",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }, ValField { label: Sym(Id(\"t\")), value: Sym(Id(\"two\")) }]))], retval: Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }, ValField { label: Sym(Id(\"t\")), value: Sym(Id(\"two\")) }]) })} }")
+    ).unwrap();
+}
+
+#[test]
+fn test_let_record() {
+    check_exp_(
+        "let name = ret $three; let val = ret 3; ret [name => val]",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"three\")), value: Num(3) }]))], retval: Record([ValField { label: Sym(Id(\"three\")), value: Num(3) }]) })} }")
+    ).unwrap();
+}
+
+#[test]
+fn test_record_pattern() {
+    check_exp_(
+        "let [$secret => val] = ret [$secret => 42]; ret [$result => val]",
+        None,
+        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"result\")), value: Num(42) }]))], retval: Record([ValField { label: Sym(Id(\"result\")), value: Num(42) }]) })} }")
+    ).unwrap();
+}
+
+#[test]
 fn test_ret() {
     check_exp_(
         "ret 1",

@@ -3,7 +3,7 @@ use crate::ast::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
         Procs, ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
     },
-    Branch, Branches, Case, Cases, Exp, Pat, Sym, Val, ValField,
+    Branch, Branches, Case, Cases, Exp, FieldPat, Pat, Sym, Val, ValField,
 };
 
 use std::collections::HashMap;
@@ -120,8 +120,11 @@ pub fn proc(
     }
 }
 
-pub fn value_field(_env: &Env, _value_field: &ValField) -> Result<ValField, ValueError> {
-    unimplemented!()
+pub fn value_field(env: &Env, value_field: &ValField) -> Result<ValField, ValueError> {
+    Ok(ValField {
+        label: value(env, &value_field.label)?,
+        value: value(env, &value_field.value)?,
+    })
 }
 
 pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
@@ -158,6 +161,17 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
     }
 }
 
+/// Try to match closed value against field.
+/// Updates the environment for each pattern-identifier match, even if pattern error.
+pub fn pattern_field(fp: &FieldPat, fs: &Vec<ValField>, env: &mut Env) -> Result<(), PatternError> {
+    for f in fs.iter() {
+        if fp.label == f.label {
+            return Ok(pattern(&fp.pattern, f.value.clone(), env)?);
+        }
+    }
+    return Err(PatternError::FieldNotFound(fp.label.clone()));
+}
+
 /// Try to match closed value against pattern.
 /// Updates the environment for each pattern-identifier match, even if pattern error.
 pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
@@ -167,6 +181,15 @@ pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
             env.vals.insert(x.clone(), v);
             Ok(())
         }
+        Pat::Fields(pats) => match v {
+            Val::Record(vals) => {
+                for f in pats.into_iter() {
+                    pattern_field(f, &vals, env)?;
+                }
+                Ok(())
+            }
+            _ => Err(PatternError::NotRecord),
+        },
         _ => unimplemented!(),
     }
 }

@@ -1,6 +1,6 @@
 pub type Span = std::ops::Range<usize>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Exp {
     Nest(Val, Box<Exp>),
     Spawn(Val, Box<Exp>),
@@ -24,7 +24,7 @@ pub enum Exp {
 
 pub type BxesEnv = std::collections::HashMap<Id, BxVal>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Val {
     /// The special CBV value form permits us to inject expression syntax into
     /// value syntax, deviating from CBPV. We restore CBPV before
@@ -42,7 +42,7 @@ pub enum Val {
 }
 
 /// "Code box" as in https://arxiv.org/abs/1703.01288
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BxVal {
     pub bxes: BxesEnv,
     pub name: Option<Id>,
@@ -53,13 +53,13 @@ pub type Id = String;
 
 pub type RecordVal = Vec<ValField>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValField {
     pub label: Val,
     pub value: Val,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Branches {
     Empty,
     Gather(Box<Branches>, Box<Branches>),
@@ -68,7 +68,7 @@ pub enum Branches {
 
 pub type FieldsPat = Vec<FieldPat>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Cases {
     Empty,
     Gather(Box<Cases>, Box<Cases>),
@@ -90,27 +90,27 @@ pub enum Sym {
     Tick,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pat {
     Ignore,
     Var(Id),
-    Fields(Box<FieldsPat>),
+    Fields(FieldsPat),
     Case(Box<FieldPat>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldPat {
     pub label: Val,
     pub pattern: Pat,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Branch {
     pub label: Val,
     pub body: Box<Exp>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Case {
     pub label: Val,
     pub pattern: Pat,
@@ -285,6 +285,7 @@ pub mod step {
     pub enum PatternError {
         NotVariant,
         NotRecord,
+        FieldNotFound(Val),
     }
 
     #[derive(Debug, Clone)]

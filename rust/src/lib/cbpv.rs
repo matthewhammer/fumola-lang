@@ -1,4 +1,4 @@
-use crate::ast::{Branch, Branches, BxVal, Case, Cases, Exp, Pat, Val};
+use crate::ast::{Branch, Branches, BxVal, Case, Cases, Exp, Pat, RecordVal, Val, ValField};
 
 use std::collections::HashMap;
 
@@ -46,8 +46,11 @@ fn value<I: Iterator<Item = String>>(
             name: bx.name.clone(),
             code: convert(free_vars, &bx.code)?,
         }))),
-        Record(_r) => unimplemented!(),
-        RecordExt(_v1, _v2) => unimplemented!(),
+        Record(r) => Ok(Record(record_val(free_vars, bindings, r)?)),
+        RecordExt(v, vf) => Ok(RecordExt(
+            Box::new(value(free_vars, bindings, v)?),
+            Box::new(value_field(free_vars, bindings, vf)?),
+        )),
         Variant(v1, v2) => Ok(Variant(
             Box::new(value(free_vars, bindings, v1)?),
             Box::new(value(free_vars, bindings, v2)?),
@@ -99,6 +102,27 @@ fn branches<I: Iterator<Item = String>>(
             body: expression_(free_vars, bindings, &br.body)?,
         })),
     }
+}
+
+fn value_field<I: Iterator<Item = String>>(
+    free_vars: &mut I,
+    bindings: &mut Bindings,
+    vf: &ValField,
+) -> Result<ValField, ()> {
+    Ok(ValField {
+        label: value(free_vars, bindings, &vf.label)?,
+        value: value(free_vars, bindings, &vf.value)?,
+    })
+}
+
+fn record_val<I: Iterator<Item = String>>(
+    free_vars: &mut I,
+    bindings: &mut Bindings,
+    r: &RecordVal,
+) -> Result<RecordVal, ()> {
+    r.iter()
+        .map(|vf| value_field(free_vars, bindings, vf))
+        .collect()
 }
 
 fn expression<I: Iterator<Item = String>>(

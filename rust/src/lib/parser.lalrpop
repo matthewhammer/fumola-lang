@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::collections::HashMap;
-use crate::ast::{Exp, Val, Pat, Id, Sym, Case, Cases, Branches, Branch, BxVal, step::{Net, Trace, TraceNet}};
+use crate::ast::{Exp, Val, ValField, FieldsPat, FieldPat, RecordVal, Pat, Id, Sym, Case, Cases, Branches, Branch, BxVal, step::{Net, Trace, TraceNet}};
 
 grammar;
 
@@ -109,6 +109,20 @@ pub ValBox: Box<Val> = {
     Val => Box::new(<>),
 };
 
+pub ValField: ValField = {
+    <v1:Val> "=>" <v2:Val> => ValField{ label: v1, value: v2 }
+}
+
+pub ValFields: RecordVal = {
+    ValField => vec![<>],
+    <f:ValField> ";" <mut fs:ValFields> => { fs.push(f); fs }
+}
+
+pub RecordVal: RecordVal = {
+    "[" "]" => vec![],
+    "[" <mut fs:ValFields> "]" => {fs.reverse(); fs},
+}
+
 pub Val: Val = {
     "#" <v1:ValBox> "(" <v2:ValBox> ")" => Val::Variant(v1, v2),
     Num => Val::Num(<>),
@@ -118,6 +132,7 @@ pub Val: Val = {
     "!" <s:Sym> => Val::Ptr(s),
     "~" <s:Sym> => Val::Proc(s),
     BxVal,
+    RecordVal => Val::Record(<>),
 };
 
 pub BxVal: Val = {
@@ -132,7 +147,18 @@ Num: i32 = {
 pub Pat: Pat = {
     "_" => Pat::Ignore,
     <x:Id> => Pat::Var(x),
+    "[" "]" => Pat::Fields(vec![]),
+    "[" <fs:FieldsPat> "]" => Pat::Fields(fs),
 };
+
+pub FieldPat: FieldPat = {
+    <v:Val> "=>" <p:Pat> => FieldPat{ label: v, pattern: p }
+}
+
+pub FieldsPat: FieldsPat = {
+    FieldPat => vec![<>],
+    <f:FieldPat> ";" <mut fs:FieldsPat> => { fs.push(f); fs }
+}
 
 pub Id: Id = {
     r"[a-zA-Z][a-zA-Z_0-9]*" => String::from_str(<>).unwrap()
