@@ -148,16 +148,6 @@ impl fmt::Display for BxVal {
     }
 }
 
-impl fmt::Display for BxesEnv {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{")?;
-        for (x, b) in self.0.iter() {
-            write!(f, "{} => {}", x, b)?;
-        }
-        write!(f, "}}")
-    }
-}
-
 impl fmt::Display for System {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -232,10 +222,103 @@ impl fmt::Display for Proc {
         }
     }
 }
+impl fmt::Display for Signal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Signal::*;
+        match self {
+            Halt(v) => write!(f, "halt({})", v),
+            LinkWaitPtr(s) => write!(f, "linkWaitPtr({})", s),
+            LinkWaitHalt(s) => write!(f, "linkWaitHalt({})", s),
+            Spawn(s, env, e) => write!(
+                f,
+                "spawn([name = {}; bxes = {}; vals = {}; code = {}])",
+                s, env.bxes, env.vals, e
+            ),
+        }
+    }
+}
+
+impl fmt::Display for InternalError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use InternalError::*;
+        match self {
+            Impossible => write!(f, "impossible"),
+            Hole => write!(f, "hole"),
+        }
+    }
+}
+
+impl fmt::Display for SwitchError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use SwitchError::*;
+        match self {
+            NotVariant(v) => write!(f, "notVariant({})", v),
+            MissingCase(s) => write!(f, "missingCase({})", s),
+        }
+    }
+}
+
+impl fmt::Display for ValueError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use ValueError::*;
+        match self {
+            CallByValue => write!(f, "callByValue"),
+            Undefined(i) => write!(f, "undefined({})", i),
+        }
+    }
+}
+
+impl fmt::Display for PatternError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use PatternError::*;
+        match self {
+            NotVariant => write!(f, "notVariant"),
+            NotRecord => write!(f, "notRecord"),
+            FieldNotFound(v) => write!(f, "fieldNotFound({})", v),
+        }
+    }
+}
+
+impl fmt::Display for ExtractError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use ExtractError::*;
+        match self {
+            Undefined(i) => write!(f, "undefined({})", i),
+        }
+    }
+}
+
+impl fmt::Display for ProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use ProjectError::*;
+        match self {
+            MissingBranch(s) => write!(f, "missingBranch({})", s),
+        }
+    }
+}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        use Error::*;
+        match self {
+            Signal(s) => write!(f, "signal({})", s),
+            Internal(i) => write!(f, "internal({})", i),
+            NoProcs => write!(f, "noProcs"),
+            Pattern(p) => write!(f, "pattern({})", p),
+            Value(v) => write!(f, "value({})", v),
+            Extract(e) => write!(f, "extract({})", e),
+            Switch(s) => write!(f, "switch({})", s),
+            Project(p) => write!(f, "project({})", p),
+            NoStep => write!(f, "noStep"),
+            NotASymbol(s) => write!(f, "notASymbol({})", s),
+            NotAPointer(s) => write!(f, "notAPointer({})", s),
+            InvalidProc(s) => write!(f, "invalidProc({})", s),
+            NotLinkTarget(v) => write!(f, "notLinkTarget({})", v),
+            Undefined(s) => write!(f, "undefined({})", s),
+            Duplicate(s) => write!(f, "duplicate({})", s),
+            AssertionFailure(v1, true, v2) => write!(f, "assertionFailure({} == {})", v1, v2),
+            AssertionFailure(v1, false, v2) => write!(f, "assertionFailure({} != {})", v1, v2),
+        }
     }
 }
 
@@ -265,24 +348,30 @@ impl fmt::Display for Traces {
 
 impl fmt::Display for Procs {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{")?;
-        for (s, p) in self.0.iter() {
+        write!(f, "[")?;
+        let mut i = self.0.iter().peekable();
+        // to do -- sort
+        while let Some((s, p)) = i.next() {
             write!(f, "{} => {}", s, p)?;
+            if !i.peek().is_none() {
+                write!(f, "; ")?;
+            }
         }
-        write!(f, "}}")
+        write!(f, "]")
     }
 }
 
 impl fmt::Display for Stack {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut i = self.0.iter().peekable();
+        write!(f, "[")?;
         while let Some(fr) = i.next() {
             write!(f, "[trace = {}, cont = {}]", fr.trace, fr.cont)?;
             if !i.peek().is_none() {
                 write!(f, "; ")?;
             }
         }
-        Ok(())
+        write!(f, "]")
     }
 }
 
@@ -305,20 +394,45 @@ impl fmt::Display for FrameCont {
 
 impl fmt::Display for Store {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{")?;
-        for (s, v) in self.0.iter() {
-            write!(f, "{} => {}; ", s, v)?;
+        write!(f, "[")?;
+        let mut i = self.0.iter().peekable();
+        // to do -- sort
+        while let Some((s, v)) = i.next() {
+            write!(f, "{} => {}", s, v)?;
+            if !i.peek().is_none() {
+                write!(f, "; ")?;
+            }
         }
-        write!(f, "}}")
+        write!(f, "]")
     }
 }
 
 impl fmt::Display for ValsEnv {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{")?;
-        for (x, v) in self.0.iter() {
-            write!(f, "{} => {}; ", x, v)?;
+        write!(f, "[")?;
+        let mut i = self.0.iter().peekable();
+        // to do -- sort
+        while let Some((x, v)) = i.next() {
+            write!(f, "{} => {}", x, v)?;
+            if !i.peek().is_none() {
+                write!(f, "; ")?;
+            }
         }
-        write!(f, "}}")
+        write!(f, "]")
+    }
+}
+
+impl fmt::Display for BxesEnv {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[")?;
+        let mut i = self.0.iter().peekable();
+        // to do -- sort
+        while let Some((x, v)) = i.next() {
+            write!(f, "{} => {}", x, v)?;
+            if !i.peek().is_none() {
+                write!(f, "; ")?;
+            }
+        }
+        write!(f, "]")
     }
 }

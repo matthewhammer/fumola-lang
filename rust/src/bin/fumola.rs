@@ -70,8 +70,9 @@ fn test_record_1() {
     check_exp_(
         "ret [$s => 1]",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }]))], retval: Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }]) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret [$s => 1]])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -79,8 +80,9 @@ fn test_record_2() {
     check_exp_(
         "ret [$s => 1; $t => $two]",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }, ValField { label: Sym(Id(\"t\")), value: Sym(Id(\"two\")) }]))], retval: Record([ValField { label: Sym(Id(\"s\")), value: Num(1) }, ValField { label: Sym(Id(\"t\")), value: Sym(Id(\"two\")) }]) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret [$s => 1; $t => $two]])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -88,8 +90,9 @@ fn test_let_record() {
     check_exp_(
         "let name = ret $three; let val = ret 3; ret [name => val]",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"three\")), value: Num(3) }]))], retval: Record([ValField { label: Sym(Id(\"three\")), value: Num(3) }]) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret [$three => 3]])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -97,28 +100,39 @@ fn test_record_pattern() {
     check_exp_(
         "let [$secret => val] = ret [$secret => 42]; ret [$result => val]",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Record([ValField { label: Sym(Id(\"result\")), value: Num(42) }]))], retval: Record([ValField { label: Sym(Id(\"result\")), value: Num(42) }]) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret [$result => 42]])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_assert_equal_success() {
-    check_exp_("assert 1 == 1", None, Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [], retval: Record([]) })} }")).unwrap()
+    check_exp_(
+        "assert 1 == 1",
+        None,
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret []])]\n]\n"),
+    )
+    .unwrap()
 }
 
 #[test]
 fn test_assert_equal_failure() {
-    check_exp_("assert 1 == 2", None, Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: AssertEq(Num(1), true, Num(2)), trace: [] }, AssertionFailure(Num(1), true, Num(2)))} }")).unwrap()
+    check_exp_("assert 1 == 2", None, Some("fumola [\n  store = [];\n  procs = [% => error(assertionFailure(1 == 2), [trace = []; stack = []; bxes = []; vals = []; cont = 1 == 2])]\n]\n")).unwrap()
 }
 
 #[test]
 fn test_assert_not_equal_success() {
-    check_exp_("assert 1 != 2", None, Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [], retval: Record([]) })} }")).unwrap()
+    check_exp_(
+        "assert 1 != 2",
+        None,
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret []])]\n]\n"),
+    )
+    .unwrap()
 }
 
 #[test]
 fn test_assert_not_equal_failure() {
-    check_exp_("assert 1 != 1", None, Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: AssertEq(Num(1), false, Num(1)), trace: [] }, AssertionFailure(Num(1), false, Num(1)))} }")).unwrap()
+    check_exp_("assert 1 != 1", None, Some("fumola [\n  store = [];\n  procs = [% => error(assertionFailure(1 != 1), [trace = []; stack = []; bxes = []; vals = []; cont = 1 != 1])]\n]\n")).unwrap()
 }
 
 #[test]
@@ -126,8 +140,9 @@ fn test_ret() {
     check_exp_(
         "ret 1",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret 1])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -135,8 +150,9 @@ fn test_let_ret() {
     check_exp_(
         "let x = ret 1; ret x",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret 1])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -144,8 +160,9 @@ fn test_let_let_ret() {
     check_exp_(
         "let x = let y = ret 1; ret y; ret x",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret 1])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -153,8 +170,9 @@ fn test_let_nest_ret() {
     check_exp_(
         "let x = #$n { ret 1 }; ret x",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Ret(Num(1))]), Ret(Num(1))], retval: Num(1) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([#n {ret 1}; ret 1])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -162,8 +180,9 @@ fn test_put() {
     check_exp_(
         "$a := 1",
         None,
-        Some("System { store: {Id(\"a\"): Num(1)}, trace: [], procs: {None: Halted(Halted { trace: [Put(Id(\"a\"), Num(1))], retval: Ptr(Id(\"a\")) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [a => 1];\n  procs = [% => halted([put a <= 1])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -171,8 +190,9 @@ fn test_nest_put() {
     check_exp_(
         "#$n { $a := 1 }",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(1))])], retval: Ptr(Nest(Id(\"n\"), Id(\"a\"))) })} }")
-    ).unwrap();
+        Some("fumola [\n  store = [n/a => 1];\n  procs = [% => halted([#n {put n/a <= 1}])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -189,7 +209,7 @@ fn test_nest_put_get() {
     check_exp_(
         "let x = #$n{ $a := 3 }; @x",
         None,
-        Some("System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(3)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(3))]), Get(Nest(Id(\"n\"), Id(\"a\")), Num(3))], retval: Num(3) })} }")).unwrap();
+        Some("fumola [\n  store = [n/a => 3];\n  procs = [% => halted([#n {put n/a <= 3}; get n/a => 3])]\n]\n")).unwrap();
 }
 
 #[test]
@@ -197,7 +217,7 @@ fn test_get_undef() {
     check_exp_(
         "@$s",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Get(Sym(Id(\"s\"))), trace: [] }, NotAPointer(Sym(Id(\"s\"))))} }")).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => error(notAPointer($s), [trace = []; stack = []; bxes = []; vals = []; cont = @$s])]\n]\n")).unwrap();
 }
 
 #[test]
@@ -214,7 +234,7 @@ fn test_nest() {
     check_exp_(
         "# $311 { ret 311 }",
         Some("Nest(Sym(Num(311)), Ret(Num(311)))"),
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Num(311), [Ret(Num(311))])], retval: Num(311) })} }"),
+        Some("fumola [\n  store = [];\n  procs = [% => halted([#311 {ret 311}])]\n]\n"),
     )
     .unwrap();
 }
@@ -245,7 +265,7 @@ fn test_project_branches() {
     check_exp_(
 	      "{ $apple => ret 1; $banana => \\x => x := x } <= $apple",
 	      Some("Project(Branches(Gather(Branch(Branch { label: Sym(Id(\"apple\")), body: Ret(Num(1)) }), Branch(Branch { label: Sym(Id(\"banana\")), body: Lambda(Var(\"x\"), Put(Var(\"x\"), Var(\"x\"))) }))), Sym(Id(\"apple\")))"),
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret 1])]\n]\n")
     ).unwrap();
 }
 
@@ -254,7 +274,7 @@ fn test_let_switch() {
     check_exp_(
         "let a = ret $apple; switch #a(1) { #a(x){ret x}; #$banana(x){ret x} }",
         Some("Let(Var(\"a\"), Ret(Sym(Id(\"apple\"))), Switch(Variant(Var(\"a\"), Num(1)), Gather(Case(Case { label: Var(\"a\"), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }), Case(Case { label: Sym(Id(\"banana\")), pattern: Var(\"x\"), body: Ret(Var(\"x\")) }))))"),
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret 1])]\n]\n")
     ).unwrap();
 }
 
@@ -275,7 +295,7 @@ fn test_syms() {
 
 #[test]
 fn test_let_box_syntax() {
-    let ast = "LetBx(Var(\"f\"), Ret(Bx(BxVal { bxes: {}, name: None, code: Lambda(Var(\"x\"), Lambda(Var(\"y\"), Put(Var(\"x\"), Var(\"y\")))) })), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))";
+    let ast = "LetBx(Var(\"f\"), Ret(Bx(BxVal { bxes: BxesEnv({}), name: None, code: Lambda(Var(\"x\"), Lambda(Var(\"y\"), Put(Var(\"x\"), Var(\"y\")))) })), App(App(Extract(Var(\"f\")), Sym(Id(\"a\"))), Num(1)))";
 
     // 0. most verbose, with least special syntax.
     check_exp("let box f = ret {\\x => \\y => x := y}; f $a 1", ast).unwrap();
@@ -289,14 +309,20 @@ fn test_let_box_syntax() {
 
 #[test]
 fn test_rec_box_syntax() {
-    check_exp_("box rec z { ret z }; z", None, Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Bx(BxVal { bxes: {}, name: Some(\"z\"), code: Ret(Var(\"z\")) }))], retval: Bx(BxVal { bxes: {}, name: Some(\"z\"), code: Ret(Var(\"z\")) }) })} }")).unwrap();
+    check_exp_(
+        "box rec z { ret z }; z",
+        None,
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret rec z {[] |- ret z}])]\n]\n"),
+    )
+    .unwrap();
 }
 
 #[test]
 fn test_let_box() {
     // box 'put_' contains code that, when given a symbol and a value,
     // puts the value at that symbol.
-    let result = "System { store: {Nest(Id(\"n\"), Id(\"a\")): Num(1)}, trace: [], procs: {None: Halted(Halted { trace: [Nest(Id(\"n\"), [Put(Nest(Id(\"n\"), Id(\"a\")), Num(1))])], retval: Ptr(Nest(Id(\"n\"), Id(\"a\"))) })} }";
+    let result =
+        "fumola [\n  store = [n/a => 1];\n  procs = [% => halted([#n {put n/a <= 1}])]\n]\n";
 
     check_exp_(
         "let box put_ = ret {\\x => \\y => x := y}; #$n { put_ $a 1 }",
@@ -318,35 +344,35 @@ fn test_let_box() {
 fn test_put_link() {
     check_exp_("let _ = $s := 42; &$s",
                None,
-               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { trace: [Put(Id(\"s\"), Num(42)), Link(Sym(Id(\"s\")), Ptr(Id(\"s\")))], retval: Ptr(Id(\"s\")) })} }")).unwrap()
+               Some("fumola [\n  store = [s => 42];\n  procs = [% => halted([put s <= 42; link $s => !s])]\n]\n")).unwrap()
 }
 
 #[test]
 fn test_put_link_get() {
     check_exp_("let _ = $s := 42; @`(&$s)",
                None,
-               Some("System { store: {Id(\"s\"): Num(42)}, trace: [], procs: {None: Halted(Halted { trace: [Put(Id(\"s\"), Num(42)), Link(Sym(Id(\"s\")), Ptr(Id(\"s\"))), Get(Id(\"s\"), Num(42))], retval: Num(42) })} }")).unwrap()
+               Some("fumola [\n  store = [s => 42];\n  procs = [% => halted([put s <= 42; link $s => !s; get s => 42])]\n]\n")).unwrap()
 }
 
 #[test]
 fn test_link_waiting_for_ptr() {
     check_exp_("&$s",
                None,
-               Some("System { store: {}, trace: [], procs: {None: WaitingForPtr(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Sym(Id(\"s\"))), trace: [] }, Id(\"s\"))} }")).unwrap()
+               Some("fumola [\n  store = [];\n  procs = [% => waitingForPtr([trace = []; stack = []; bxes = []; vals = []; cont = &$s], s)]\n]\n")).unwrap()
 }
 
 #[test]
 fn test_link_invalid_proc() {
     check_exp_("&~s",
                None,
-               Some("System { store: {}, trace: [], procs: {None: Error(Running { env: Env { vals: {}, bxes: {} }, stack: [], cont: Link(Proc(Id(\"s\"))), trace: [] }, InvalidProc(Id(\"s\")))} }")).unwrap()
+               Some("fumola [\n  store = [];\n  procs = [% => error(invalidProc(s), [trace = []; stack = []; bxes = []; vals = []; cont = &~s])]\n]\n")).unwrap()
 }
 
 #[test]
 fn test_link_wait_for_halt() {
     check_exp_("let p = ~$p { ret 42 }; &p",
                None,
-               Some("System { store: {Id(\"p\"): Proc(Id(\"p\"))}, trace: [], procs: {None: Halted(Halted { trace: [Link(Proc(Id(\"p\")), Num(42))], retval: Num(42) }), Id(\"p\"): Halted(Halted { trace: [Ret(Num(42))], retval: Num(42) })} }")).unwrap()
+               Some("fumola [\n  store = [p => ~p];\n  procs = [p => halted([ret 42]); % => halted([link ~p => 42])]\n]\n")).unwrap()
 }
 
 // to do -- need a canonical (sorted) order for procs and vars
@@ -371,7 +397,7 @@ fn test_cbpv_convert() {
     check_exp_(
         "box id3 {\\x => \\y => \\z => ret x}; box one {ret 1}; box two {ret 2}; box three {ret 3}; id3 `(one) `(two) `(three)",
         None,
-        Some("System { store: {}, trace: [], procs: {None: Halted(Halted { trace: [Ret(Num(1))], retval: Num(1) })} }")).unwrap();
+        Some("fumola [\n  store = [];\n  procs = [% => halted([ret 1])]\n]\n")).unwrap();
 }
 
 /// Fumola tools
