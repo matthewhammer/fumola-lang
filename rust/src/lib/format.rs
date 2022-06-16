@@ -349,10 +349,12 @@ impl fmt::Display for Traces {
 impl fmt::Display for Procs {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[")?;
-        let mut i = self.0.iter().peekable();
-        // to do -- sort
-        while let Some((s, p)) = i.next() {
-            write!(f, "{} => {}", s, p)?;
+        let mut ps: Vec<_> = self.0.keys().collect();
+        ps.sort();
+        let mut i = ps.iter().peekable();
+        while let Some(p) = i.next() {
+            let proc = self.0.get(*p).ok_or(fmt::Error)?;
+            write!(f, "{} => {}", p, proc)?;
             if !i.peek().is_none() {
                 write!(f, "; ")?;
             }
@@ -395,10 +397,12 @@ impl fmt::Display for FrameCont {
 impl fmt::Display for Store {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[")?;
-        let mut i = self.0.iter().peekable();
-        // to do -- sort
-        while let Some((s, v)) = i.next() {
-            write!(f, "{} => {}", s, v)?;
+        let mut xs: Vec<_> = self.0.keys().collect();
+        xs.sort();
+        let mut i = xs.iter().peekable();
+        while let Some(x) = i.next() {
+            let v = self.0.get(*x).ok_or(fmt::Error)?;
+            write!(f, "{} => {}", x, v)?;
             if !i.peek().is_none() {
                 write!(f, "; ")?;
             }
@@ -410,9 +414,11 @@ impl fmt::Display for Store {
 impl fmt::Display for ValsEnv {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[")?;
-        let mut i = self.0.iter().peekable();
-        // to do -- sort
-        while let Some((x, v)) = i.next() {
+        let mut xs: Vec<_> = self.0.keys().collect();
+        xs.sort();
+        let mut i = xs.iter().peekable();
+        while let Some(x) = i.next() {
+            let v = self.0.get(*x).ok_or(fmt::Error)?;
             write!(f, "{} => {}", x, v)?;
             if !i.peek().is_none() {
                 write!(f, "; ")?;
@@ -425,9 +431,11 @@ impl fmt::Display for ValsEnv {
 impl fmt::Display for BxesEnv {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[")?;
-        let mut i = self.0.iter().peekable();
-        // to do -- sort
-        while let Some((x, v)) = i.next() {
+        let mut xs: Vec<_> = self.0.keys().collect();
+        xs.sort();
+        let mut i = xs.iter().peekable();
+        while let Some(x) = i.next() {
+            let v = self.0.get(*x).ok_or(fmt::Error)?;
             write!(f, "{} => {}", x, v)?;
             if !i.peek().is_none() {
                 write!(f, "; ")?;

@@ -372,10 +372,8 @@ fn test_link_invalid_proc() {
 fn test_link_wait_for_halt() {
     check_exp_("let p = ~$p { ret 42 }; &p",
                None,
-               Some("fumola [\n  store = [p => ~p];\n  procs = [p => halted([ret 42]); % => halted([link ~p => 42])]\n]\n")).unwrap()
+               Some("fumola [\n  store = [p => ~p];\n  procs = [% => halted([link ~p => 42]); p => halted([ret 42])]\n]\n")).unwrap()
 }
-
-// to do -- need a canonical (sorted) order for procs and vars
 
 #[test]
 fn test_spawn() {
