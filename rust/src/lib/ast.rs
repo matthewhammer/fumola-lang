@@ -1,5 +1,3 @@
-pub type Span = std::ops::Range<usize>;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Exp {
     Nest(Val, Box<Exp>),
@@ -22,7 +20,8 @@ pub enum Exp {
     Hole,
 }
 
-pub type BxesEnv = std::collections::HashMap<Id, BxVal>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BxesEnv(pub std::collections::HashMap<Id, BxVal>);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Val {
@@ -41,7 +40,7 @@ pub enum Val {
     Bx(Box<BxVal>),
 }
 
-/// "Code box" as in https://arxiv.org/abs/1703.01288
+/// "Code box" as in <https://arxiv.org/abs/1703.01288>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BxVal {
     pub bxes: BxesEnv,
@@ -51,7 +50,8 @@ pub struct BxVal {
 
 pub type Id = String;
 
-pub type RecordVal = Vec<ValField>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordVal(pub Vec<ValField>);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValField {
@@ -66,7 +66,8 @@ pub enum Branches {
     Branch(Branch),
 }
 
-pub type FieldsPat = Vec<FieldPat>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FieldsPat(pub Vec<FieldPat>);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Cases {
@@ -144,7 +145,6 @@ pub mod step {
     #[derive(Debug)]
     pub struct System {
         pub store: Store,
-        pub trace: Vec<Trace>,
         pub procs: Procs,
     }
 
@@ -158,13 +158,20 @@ pub mod step {
         Link(Val, Val),
     }
 
-    pub type Procs = std::collections::HashMap<Sym, Proc>;
+    #[derive(Debug, Clone)]
+    pub struct Traces(pub Vec<Trace>);
 
-    pub type Store = std::collections::HashMap<Sym, Val>;
+    #[derive(Debug, Clone)]
+    pub struct Procs(pub std::collections::HashMap<Sym, Proc>);
 
-    pub type Stack = Vec<Frame>;
+    #[derive(Debug, Clone)]
+    pub struct Store(pub std::collections::HashMap<Sym, Val>);
 
-    pub type ValsEnv = std::collections::HashMap<Id, Val>;
+    #[derive(Debug, Clone)]
+    pub struct Stack(pub Vec<Frame>);
+
+    #[derive(Debug, Clone)]
+    pub struct ValsEnv(pub std::collections::HashMap<Id, Val>);
 
     #[derive(Debug, Clone)]
     pub struct Env {
@@ -311,19 +318,19 @@ pub mod step {
         pub env: Env,
         pub stack: Stack,
         pub cont: Exp,
-        pub trace: Vec<Trace>,
+        pub trace: Traces,
     }
 
     #[derive(Debug, Clone)]
     pub struct Halted {
-        pub trace: Vec<Trace>,
+        pub trace: Traces,
         pub retval: Val,
     }
 
     #[derive(Debug, Clone)]
     pub struct Frame {
         pub cont: FrameCont,
-        pub trace: Vec<Trace>,
+        pub trace: Traces,
     }
 
     #[derive(Debug, Clone)]

@@ -7,7 +7,7 @@ use structopt::{clap, clap::Shell};
 
 use fumola::{
     ast::{
-        step::{Proc, System},
+        step::{Proc, Procs, Store, System},
         Exp, Sym,
     },
     error::OurResult,
@@ -36,9 +36,8 @@ pub fn system_from_exp(e: &Exp) -> Result<System, ()> {
     let e = fumola::cbpv::convert(&mut fv, e)?;
     procs.insert(Sym::None, Proc::Spawn(e));
     Ok(System {
-        store: HashMap::new(),
-        trace: vec![],
-        procs,
+        store: Store(HashMap::new()),
+        procs: Procs(procs),
     })
 }
 
@@ -52,11 +51,11 @@ fn check_exp_(input: &str, ast: Option<&str>, final_sys: Option<&str>) -> Result
     };
     let mut sys = system_from_exp(&expr)?;
     fumola::step::fully(&mut sys);
-    println!("final system:\n{:?}", &sys);
+    println!("final system:\n{}", &sys);
     match final_sys {
         None => (),
         Some(s) => {
-            assert_eq!(&format!("{:?}", &sys), s);
+            assert_eq!(&format!("{}", &sys), s);
         }
     };
     Ok(())

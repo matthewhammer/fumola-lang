@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::collections::HashMap;
-use crate::ast::{Exp, Val, ValField, FieldsPat, FieldPat, RecordVal, Pat, Id, Sym, Case, Cases, Branches, Branch, BxVal, step::{Net, Trace, TraceNet}};
+use crate::ast::{Exp, Val, ValField, FieldsPat, FieldPat, RecordVal, Pat, Id, Sym, Case, Cases, Branches, Branch, BxVal, BxesEnv, step::{Net, Trace, TraceNet}};
 
 grammar;
 
@@ -68,7 +68,7 @@ pub ExpHd: Exp = {
     "let" "box" <p:Pat> "=" <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
     "let" "box" <p:Pat> <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
     "box" <p:Pat> <bx:BxVal> ";" <e2:ExpBox> => Exp::LetBx(p, Box::new(Exp::Ret(bx)), e2),
-    "box" "rec" <id:Id> "{" <e:Exp> "}" ";" <e2:ExpBox> => Exp::LetBx(Pat::Var(id.clone()), Box::new(Exp::Ret(Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:Some(id), code:e})))), e2),
+    "box" "rec" <id:Id> "{" <e:Exp> "}" ";" <e2:ExpBox> => Exp::LetBx(Pat::Var(id.clone()), Box::new(Exp::Ret(Val::Bx(Box::new(BxVal{bxes: BxesEnv(HashMap::new()), name:Some(id), code:e})))), e2),
     "ret" <v:Val> => Exp::Ret(v),
     ExpApp,
 };
@@ -113,14 +113,14 @@ pub ValField: ValField = {
     <v1:Val> "=>" <v2:Val> => ValField{ label: v1, value: v2 }
 }
 
-pub ValFields: RecordVal = {
+pub ValFields: Vec<ValField> = {
     ValField => vec![<>],
     <f:ValField> ";" <mut fs:ValFields> => { fs.push(f); fs }
 }
 
 pub RecordVal: RecordVal = {
-    "[" "]" => vec![],
-    "[" <mut fs:ValFields> "]" => {fs.reverse(); fs},
+    "[" "]" => RecordVal(vec![]),
+    "[" <mut fs:ValFields> "]" => {fs.reverse(); RecordVal(fs)},
 }
 
 pub Val: Val = {
@@ -136,8 +136,8 @@ pub Val: Val = {
 };
 
 pub BxVal: Val = {
-   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:None, code:e})),
-   "rec" <id:Id> "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: HashMap::new(), name:Some(id), code:e}))
+   "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: BxesEnv(HashMap::new()), name:None, code:e})),
+   "rec" <id:Id> "{" <e:Exp> "}" => Val::Bx(Box::new(BxVal{bxes: BxesEnv(HashMap::new()), name:Some(id), code:e}))
 }
 
 Num: i32 = {
@@ -147,15 +147,15 @@ Num: i32 = {
 pub Pat: Pat = {
     "_" => Pat::Ignore,
     <x:Id> => Pat::Var(x),
-    "[" "]" => Pat::Fields(vec![]),
-    "[" <fs:FieldsPat> "]" => Pat::Fields(fs),
+    "[" "]" => Pat::Fields(FieldsPat(vec![])),
+    "[" <fs:FieldsPat> "]" => Pat::Fields(FieldsPat(fs)),
 };
 
 pub FieldPat: FieldPat = {
     <v:Val> "=>" <p:Pat> => FieldPat{ label: v, pattern: p }
 }
 
-pub FieldsPat: FieldsPat = {
+pub FieldsPat: Vec<FieldPat> = {
     FieldPat => vec![<>],
     <f:FieldPat> ";" <mut fs:FieldsPat> => { fs.push(f); fs }
 }

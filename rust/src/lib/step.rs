@@ -1,9 +1,10 @@
 use crate::ast::{
     step::{
         Env, Error, ExtractError, Frame, FrameCont, Halted, InternalError, PatternError, Proc,
-        Procs, ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, ValueError,
+        Procs, ProjectError, Running, Signal, Stack, Store, SwitchError, System, Trace, Traces,
+        ValsEnv, ValueError,
     },
-    Branch, Branches, Case, Cases, Exp, FieldPat, Pat, Sym, Val, ValField,
+    Branch, Branches, BxesEnv, Case, Cases, Exp, FieldPat, Pat, RecordVal, Sym, Val, ValField,
 };
 
 use std::collections::HashMap;
@@ -28,17 +29,17 @@ pub fn proc(
         }
         Proc::Spawn(e) => {
             *proc = Proc::Running(Running {
+                trace: Traces(vec![]),
                 env: Env {
-                    vals: HashMap::new(),
-                    bxes: HashMap::new(),
+                    vals: ValsEnv(HashMap::new()),
+                    bxes: BxesEnv(HashMap::new()),
                 },
-                stack: vec![],
+                stack: Stack(vec![]),
                 cont: e,
-                trace: vec![],
             });
             Ok(())
         }
-        Proc::WaitingForPtr(_, ref s) => match store.get(s) {
+        Proc::WaitingForPtr(_, ref s) => match store.0.get(s) {
             None => {
                 *proc = pr;
                 Err(())
@@ -54,7 +55,7 @@ pub fn proc(
                 Ok(())
             }
         },
-        Proc::WaitingForHalt(_, ref s) => match procs.get(s) {
+        Proc::WaitingForHalt(_, ref s) => match procs.0.get(s) {
             None => {
                 *proc = match pr {
                     Proc::WaitingForHalt(r, _) => Proc::Error(r, Error::InvalidProc(s.clone())),
@@ -67,7 +68,7 @@ pub fn proc(
                     Proc::WaitingForHalt(mut r, sym) => {
                         let v = halted.retval.clone();
                         r.cont = Exp::Ret_(v.clone());
-                        r.trace.push(Trace::Link(Val::Proc(sym.clone()), v));
+                        r.trace.0.push(Trace::Link(Val::Proc(sym.clone()), v));
                         Proc::Running(r)
                     }
                     _ => unreachable!(),
@@ -104,8 +105,8 @@ pub fn proc(
                     s,
                     Proc::Running(Running {
                         env,
-                        trace: vec![],
-                        stack: vec![],
+                        trace: Traces(vec![]),
+                        stack: Stack(vec![]),
                         cont,
                     }),
                 ));
@@ -138,7 +139,7 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
             Box::new(value(env, v1)?),
             Box::new(value(env, v2)?),
         )),
-        Var(x) => match env.vals.get(x) {
+        Var(x) => match env.vals.0.get(x) {
             Some(v) => Ok(v.clone()),
             None => Err(ValueError::Undefined(x.clone())),
         },
@@ -149,13 +150,13 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
         )),
         Record(fs) => {
             let mut v = vec![];
-            for r in fs
-                .iter()
-                .map(|vf: &ValField| -> Result<ValField, ValueError> { value_field(env, vf) })
+            for r in
+                fs.0.iter()
+                    .map(|vf: &ValField| -> Result<ValField, ValueError> { value_field(env, vf) })
             {
                 v.push(r?)
             }
-            Ok(Record(v))
+            Ok(Record(RecordVal(v)))
         }
         CallByValue(_) => Err(ValueError::CallByValue),
     }
@@ -178,13 +179,13 @@ pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
     match p {
         Pat::Ignore => Ok(()),
         Pat::Var(x) => {
-            env.vals.insert(x.clone(), v);
+            env.vals.0.insert(x.clone(), v);
             Ok(())
         }
         Pat::Fields(pats) => match v {
             Val::Record(vals) => {
-                for f in pats.into_iter() {
-                    pattern_field(f, &vals, env)?;
+                for f in pats.0.iter() {
+                    pattern_field(&f, &vals.0, env)?;
                 }
                 Ok(())
             }
@@ -253,7 +254,7 @@ pub fn into_pointer(v: Val) -> Result<Sym, Error> {
 
 pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
     let mut r = s;
-    for fr in stack.iter().rev() {
+    for fr in stack.0.iter().rev() {
         match &fr.cont {
             FrameCont::Nest(ns) => r = Sym::Nest(Box::new(ns.clone()), Box::new(r)),
             _ => (),
@@ -265,10 +266,10 @@ pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
 /// Empty stack means halting program.  We trace the halting return.
 /// Stack with nest on top means we trace the return from the nest.
 pub fn stack_says_trace_ret(stack: &Stack) -> bool {
-    if stack.len() == 0 {
+    if stack.0.len() == 0 {
         true
     } else {
-        match stack.last().unwrap().cont {
+        match stack.0.last().unwrap().cont {
             FrameCont::Nest(_) => true,
             _ => false,
         }
@@ -283,31 +284,32 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
     use Exp::*;
     use Val::*;
     let h = head(&r.cont);
-    println!("running({{cont = {:?}, ...}})", h);
+    println!("running([cont = {}; ...])", h);
     let cont = replace(&mut r.cont, h);
     match cont {
         Hole => Err(Error::Internal(InternalError::Hole)),
         Ret(v) => {
             let v = value(&r.env, &v)?;
             if stack_says_trace_ret(&r.stack) {
-                r.trace.push(Trace::Ret(v.clone()));
+                r.trace.0.push(Trace::Ret(v.clone()));
             };
             r.cont = Ret_(v);
             running(procs, store, r)
         }
         Ret_(v) => {
-            if r.stack.len() == 0 {
+            if r.stack.0.len() == 0 {
                 Err(Error::Signal(Signal::Halt(v)))
             } else {
                 let fr = r
                     .stack
+                    .0
                     .pop()
                     .ok_or(Error::Internal(InternalError::Impossible))?;
                 match fr.cont {
                     FrameCont::App(_) | FrameCont::Project(_) => Err(Error::NoStep),
                     FrameCont::Nest(s) => {
                         let tr = replace(&mut r.trace, fr.trace);
-                        r.trace.push(Trace::Nest(s, tr));
+                        r.trace.0.push(Trace::Nest(s, tr.0));
                         Ok(())
                     }
                     FrameCont::Let(mut env0, pat, e1) => {
@@ -315,7 +317,7 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
                         let _ = replace(&mut r.env, env0);
                         let _ = replace(&mut r.cont, e1);
                         let mut tr = replace(&mut r.trace, fr.trace);
-                        r.trace.append(&mut tr);
+                        r.trace.0.append(&mut tr.0);
                         Ok(())
                     }
                     FrameCont::LetBx(env0, Pat::Var(x), e1) => {
@@ -323,8 +325,8 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
                             let _ = replace(&mut r.env, env0);
                             let _ = replace(&mut r.cont, e1);
                             let mut tr = replace(&mut r.trace, fr.trace);
-                            r.trace.append(&mut tr);
-                            r.env.bxes.insert(x, *bv);
+                            r.trace.0.append(&mut tr.0);
+                            r.env.bxes.0.insert(x, *bv);
                             Ok(())
                         } else {
                             Err(Error::NoStep)
@@ -337,7 +339,7 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         Spawn(v, e) => match value(&r.env, &v)? {
             Sym(s) => {
                 let s = put_symbol(&r.stack, s);
-                match store.get(&s) {
+                match store.0.get(&s) {
                     None => {
                         r.cont = Ret_(Val::Proc(s.clone()));
                         Err(Error::Signal(Signal::Spawn(s, r.env.clone(), *e)))
@@ -349,8 +351,8 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         },
         Nest(v, e) => match value(&r.env, &v)? {
             Sym(s) => {
-                let trace = replace(&mut r.trace, vec![]);
-                r.stack.push(Frame {
+                let trace = replace(&mut r.trace, Traces(vec![]));
+                r.stack.0.push(Frame {
                     cont: FrameCont::Nest(s),
                     trace,
                 });
@@ -360,8 +362,8 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
             _ => Err(Error::NoStep),
         },
         Let(pat, e1, e2) => {
-            let trace = replace(&mut r.trace, vec![]);
-            r.stack.push(Frame {
+            let trace = replace(&mut r.trace, Traces(vec![]));
+            r.stack.0.push(Frame {
                 cont: FrameCont::Let(r.env.clone(), pat, *e2),
                 trace,
             });
@@ -369,8 +371,8 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
             Ok(())
         }
         LetBx(Pat::Var(x), e1, e2) => {
-            let trace = replace(&mut r.trace, vec![]);
-            r.stack.push(Frame {
+            let trace = replace(&mut r.trace, Traces(vec![]));
+            r.stack.0.push(Frame {
                 cont: FrameCont::LetBx(r.env.clone(), Pat::Var(x), *e2),
                 trace,
             });
@@ -379,13 +381,13 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         }
         LetBx(_, _e1, _e2) => unimplemented!(),
         Extract(Var(x)) => {
-            let bxo = r.env.bxes.get(&x);
+            let bxo = r.env.bxes.0.get(&x);
             let bx = bxo
                 .ok_or(Error::Extract(ExtractError::Undefined(x)))?
                 .clone();
-            r.env.vals = HashMap::new();
+            r.env.vals = ValsEnv(HashMap::new());
             if let Some(name) = bx.name.clone() {
-                drop(r.env.vals.insert(name, Bx(Box::new(bx.clone()))))
+                drop(r.env.vals.0.insert(name, Bx(Box::new(bx.clone()))))
             }
             r.env.bxes = bx.bxes;
             r.cont = bx.code;
@@ -393,18 +395,19 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         }
         Extract(_) => unimplemented!(),
         Lambda(pat, e1) => {
-            if r.stack.len() == 0 {
+            if r.stack.0.len() == 0 {
                 Err(Error::NoStep)
             } else {
                 let fr = r
                     .stack
+                    .0
                     .pop()
                     .ok_or(Error::Internal(InternalError::Impossible))?;
                 match fr.cont {
                     FrameCont::App(v) => {
                         pattern(&pat, v, &mut r.env)?;
                         let mut tr = replace(&mut r.trace, fr.trace);
-                        r.trace.append(&mut tr);
+                        r.trace.0.append(&mut tr.0);
                         let _ = replace(&mut r.cont, *e1);
                         Ok(())
                     }
@@ -413,11 +416,12 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
             }
         }
         Branches(branches) => {
-            if r.stack.len() == 0 {
+            if r.stack.0.len() == 0 {
                 Err(Error::NoStep)
             } else {
                 let fr = r
                     .stack
+                    .0
                     .pop()
                     .ok_or(Error::Internal(InternalError::Impossible))?;
                 match fr.cont {
@@ -425,7 +429,7 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
                         let sym = into_symbol(v)?;
                         let br = project_branch(&r.env, &sym, branches)?;
                         let mut tr = replace(&mut r.trace, fr.trace);
-                        r.trace.append(&mut tr);
+                        r.trace.0.append(&mut tr.0);
                         let _ = replace(&mut r.cont, *br.body);
                         Ok(())
                     }
@@ -435,8 +439,8 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         }
         App(e1, v) => {
             let v = value(&r.env, &v)?;
-            let trace = replace(&mut r.trace, vec![]);
-            r.stack.push(Frame {
+            let trace = replace(&mut r.trace, Traces(vec![]));
+            r.stack.0.push(Frame {
                 cont: FrameCont::App(v),
                 trace,
             });
@@ -445,8 +449,8 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         }
         Project(e1, v) => {
             let v = value(&r.env, &v)?;
-            let trace = replace(&mut r.trace, vec![]);
-            r.stack.push(Frame {
+            let trace = replace(&mut r.trace, Traces(vec![]));
+            r.stack.0.push(Frame {
                 cont: FrameCont::Project(v),
                 trace,
             });
@@ -458,19 +462,19 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
             let sym = into_symbol(v1)?;
             let v2 = value(&r.env, &v2)?;
             let sym = put_symbol(&r.stack, sym);
-            r.trace.push(Trace::Put(sym.clone(), v2.clone()));
-            store.insert(sym.clone(), v2);
+            r.trace.0.push(Trace::Put(sym.clone(), v2.clone()));
+            store.0.insert(sym.clone(), v2);
             r.cont = Ret_(Ptr(sym));
             Ok(())
         }
         Get(v) => {
             let v1 = value(&r.env, &v)?;
             let sym = into_pointer(v1)?;
-            let v2 = match store.get(&sym) {
+            let v2 = match store.0.get(&sym) {
                 None => return Err(Error::Undefined(sym)),
                 Some(v2) => v2.clone(),
             };
-            r.trace.push(Trace::Get(sym.clone(), v2.clone()));
+            r.trace.0.push(Trace::Get(sym.clone(), v2.clone()));
             r.cont = Ret_(v2);
             Ok(())
         }
@@ -490,13 +494,14 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         Link(v1) => {
             let v1 = value(&r.env, &v1)?;
             match v1 {
-                Val::Sym(sym) => match store.get(&sym) {
+                Val::Sym(sym) => match store.0.get(&sym) {
                     None => {
                         r.cont = Link(Val::Sym(sym.clone()));
                         Err(Error::Signal(Signal::LinkWaitPtr(sym)))
                     }
                     Some(_) => {
                         r.trace
+                            .0
                             .push(Trace::Link(Val::Sym(sym.clone()), Val::Ptr(sym.clone())));
                         r.cont = Ret_(Val::Ptr(sym));
                         Ok(())
@@ -510,7 +515,12 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
             let v1 = value(&r.env, &v1)?;
             let v2 = value(&r.env, &v2)?;
             if (v1 == v2) == cond {
-                r.cont = Ret_(Val::Record(vec![])); // use a special unit value instead?
+                // encode unit. (use a special unit value instead?)
+                let rv = Val::Record(RecordVal(vec![]));
+                if stack_says_trace_ret(&r.stack) {
+                    r.trace.0.push(Trace::Ret(rv.clone()));
+                };
+                r.cont = Ret_(rv);
                 Ok(())
             } else {
                 Err(Error::AssertionFailure(v1, cond, v2))
@@ -561,13 +571,13 @@ pub fn switch_case(env: &Env, sym: &Sym, cases: Cases) -> Result<Case, Error> {
 
 /// Step the system at most once, if possible.
 pub fn system(sys: &mut System) -> Result<(), Error> {
-    if sys.procs.len() == 0 {
+    if sys.procs.0.len() == 0 {
         return Err(Error::NoProcs);
     }
     let mut stepped = false;
     let mut spawned = vec![];
     let mut next_procs = HashMap::new();
-    for (s, p) in sys.procs.iter() {
+    for (s, p) in sys.procs.0.iter() {
         let mut spawn = vec![];
         let mut p = p.clone(); // to do -- somehow avoid this clone.
         match proc(&sys.procs, &mut sys.store, &mut p, &mut spawn) {
@@ -576,14 +586,14 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
         };
         next_procs.insert(s.clone(), p);
         for (s, p) in spawn.into_iter() {
-            let prior = sys.store.insert(s.clone(), Val::Proc(s.clone()));
+            let prior = sys.store.0.insert(s.clone(), Val::Proc(s.clone()));
             spawned.push((s, p));
             assert!(prior.is_none());
         }
     }
-    sys.procs = next_procs;
+    sys.procs = Procs(next_procs);
     for (s, p) in spawned.into_iter() {
-        let prior = sys.procs.insert(s, p);
+        let prior = sys.procs.0.insert(s, p);
         assert!(prior.is_none());
     }
     if stepped {

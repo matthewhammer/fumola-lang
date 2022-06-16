@@ -1,4 +1,6 @@
-use crate::ast::{Branch, Branches, BxVal, Case, Cases, Exp, Pat, RecordVal, Val, ValField};
+use crate::ast::{
+    Branch, Branches, BxVal, BxesEnv, Case, Cases, Exp, Pat, RecordVal, Val, ValField,
+};
 
 use std::collections::HashMap;
 
@@ -42,7 +44,7 @@ fn value<I: Iterator<Item = String>>(
             res
         }
         Bx(bx) => Ok(Bx(Box::new(BxVal {
-            bxes: HashMap::new(),
+            bxes: BxesEnv(HashMap::new()),
             name: bx.name.clone(),
             code: convert(free_vars, &bx.code)?,
         }))),
@@ -120,9 +122,11 @@ fn record_val<I: Iterator<Item = String>>(
     bindings: &mut Bindings,
     r: &RecordVal,
 ) -> Result<RecordVal, ()> {
-    r.iter()
-        .map(|vf| value_field(free_vars, bindings, vf))
-        .collect()
+    let rv: Result<_, _> =
+        r.0.iter()
+            .map(|vf| value_field(free_vars, bindings, vf))
+            .collect();
+    Ok(RecordVal(rv?))
 }
 
 fn expression<I: Iterator<Item = String>>(
