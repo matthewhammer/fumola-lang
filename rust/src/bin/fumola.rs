@@ -9,9 +9,15 @@ use fumola::{
     ast::{
         step::{Proc, Procs, Store, System},
         Exp, Sym,
-    },
-    error::OurResult,
+    }
 };
+
+pub type OurResult<X> = Result<X, OurError>;
+
+#[derive(Debug, Clone)]
+pub enum OurError {
+    String(String),
+}
 
 struct FreeVars {
     pub base: String,
