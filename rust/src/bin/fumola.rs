@@ -61,6 +61,7 @@ fn check_exp_(input: &str, ast: Option<&str>, final_sys: Option<&str>) -> Result
     Ok(())
 }
 
+#[cfg(test)]
 fn check_exp(input: &str, ast: &str) -> Result<(), ()> {
     check_exp_(input, Some(ast), None)
 }
