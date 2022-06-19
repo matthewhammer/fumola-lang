@@ -165,7 +165,7 @@ impl fmt::Display for Sym {
             None => write!(f, "%"),
             Num(n) => write!(f, "{}", n),
             Id(i) => write!(f, "{}", i),
-            Bin(s1, s2) => write!(f, "{}-{}", s1, s2),
+            Bin(s1, s2) => write!(f, "{}{}", s1, s2),
             Nest(s1, s2) => write!(f, "{}/{}", s1, s2),
             Tri(s1, s2, s3) => write!(f, "{}{}{}", s1, s2, s3),
             Dash => write!(f, "-"),
