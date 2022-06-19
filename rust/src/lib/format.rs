@@ -20,7 +20,7 @@ impl fmt::Display for FieldsPat {
             let l = &fld.label;
             let p = &fld.pattern;
             write!(f, "{} => {}", l, p)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -102,7 +102,7 @@ impl fmt::Display for RecordVal {
             let l = &fld.label;
             let v = &fld.value;
             write!(f, "{} => {}", l, v)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -165,7 +165,7 @@ impl fmt::Display for Sym {
             None => write!(f, "%"),
             Num(n) => write!(f, "{}", n),
             Id(i) => write!(f, "{}", i),
-            Bin(s1, s2) => write!(f, "{}-{}", s1, s2),
+            Bin(s1, s2) => write!(f, "{}{}", s1, s2),
             Nest(s1, s2) => write!(f, "{}/{}", s1, s2),
             Tri(s1, s2, s3) => write!(f, "{}{}{}", s1, s2, s3),
             Dash => write!(f, "-"),
@@ -184,7 +184,7 @@ impl fmt::Display for Trace {
                 let mut i = ts.iter().peekable();
                 while let Some(tr) = i.next() {
                     write!(f, "{}", tr)?;
-                    if !i.peek().is_none() {
+                    if i.peek().is_some() {
                         write!(f, "; ")?;
                     }
                 }
@@ -195,7 +195,7 @@ impl fmt::Display for Trace {
                 let mut i = ts.iter().peekable();
                 while let Some(tr) = i.next() {
                     write!(f, "{}", tr)?;
-                    if !i.peek().is_none() {
+                    if i.peek().is_some() {
                         write!(f, "; ")?;
                     }
                 }
@@ -338,7 +338,7 @@ impl fmt::Display for Traces {
         let mut i = self.0.iter().peekable();
         while let Some(tr) = i.next() {
             write!(f, "{}", tr)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -355,7 +355,7 @@ impl fmt::Display for Procs {
         while let Some(p) = i.next() {
             let proc = self.0.get(*p).ok_or(fmt::Error)?;
             write!(f, "{} => {}", p, proc)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -369,7 +369,7 @@ impl fmt::Display for Stack {
         write!(f, "[")?;
         while let Some(fr) = i.next() {
             write!(f, "[trace = {}, cont = {}]", fr.trace, fr.cont)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -403,7 +403,7 @@ impl fmt::Display for Store {
         while let Some(x) = i.next() {
             let v = self.0.get(*x).ok_or(fmt::Error)?;
             write!(f, "{} => {}", x, v)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -420,7 +420,7 @@ impl fmt::Display for ValsEnv {
         while let Some(x) = i.next() {
             let v = self.0.get(*x).ok_or(fmt::Error)?;
             write!(f, "{} => {}", x, v)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
@@ -437,7 +437,7 @@ impl fmt::Display for BxesEnv {
         while let Some(x) = i.next() {
             let v = self.0.get(*x).ok_or(fmt::Error)?;
             write!(f, "{} => {}", x, v)?;
-            if !i.peek().is_none() {
+            if i.peek().is_some() {
                 write!(f, "; ")?;
             }
         }
