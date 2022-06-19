@@ -2,6 +2,9 @@ use crate::ast::{
     Branch, Branches, BxVal, BxesEnv, Case, Cases, Exp, Pat, RecordVal, Val, ValField,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct FreeVarsNoNext;
+
 use std::collections::HashMap;
 
 pub struct Binding {
@@ -11,11 +14,17 @@ pub struct Binding {
 
 pub type Bindings = Vec<Binding>;
 
-fn convert_<I: Iterator<Item = String>>(free_vars: &mut I, e: &Exp) -> Result<Box<Exp>, ()> {
+fn convert_<I: Iterator<Item = String>>(
+    free_vars: &mut I,
+    e: &Exp,
+) -> Result<Box<Exp>, FreeVarsNoNext> {
     Ok(Box::new(convert(free_vars, e)?))
 }
 
-pub fn convert<I: Iterator<Item = String>>(free_vars: &mut I, e: &Exp) -> Result<Exp, ()> {
+pub fn convert<I: Iterator<Item = String>>(
+    free_vars: &mut I,
+    e: &Exp,
+) -> Result<Exp, FreeVarsNoNext> {
     let mut bindings = vec![];
     let e = expression(free_vars, &mut bindings, e)?;
     Ok(wrap(bindings, e))
@@ -33,12 +42,12 @@ fn value<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     v: &Val,
-) -> Result<Val, ()> {
+) -> Result<Val, FreeVarsNoNext> {
     use Val::*;
     match v {
         CallByValue(e) => {
             let def = expression(free_vars, bindings, e)?;
-            let var = free_vars.next().ok_or(())?;
+            let var = free_vars.next().ok_or(FreeVarsNoNext)?;
             let res = Ok(Var(var.clone()));
             bindings.push(Binding { var, def });
             res
@@ -65,7 +74,7 @@ fn expression_<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     e: &Exp,
-) -> Result<Box<Exp>, ()> {
+) -> Result<Box<Exp>, FreeVarsNoNext> {
     Ok(Box::new(expression(free_vars, bindings, e)?))
 }
 
@@ -73,7 +82,7 @@ fn cases<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     cs: &Cases,
-) -> Result<Cases, ()> {
+) -> Result<Cases, FreeVarsNoNext> {
     match cs {
         Cases::Empty => Ok(Cases::Empty),
         Cases::Gather(cases1, cases2) => Ok(Cases::Gather(
@@ -92,7 +101,7 @@ fn branches<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     bs: &Branches,
-) -> Result<Branches, ()> {
+) -> Result<Branches, FreeVarsNoNext> {
     match bs {
         Branches::Empty => Ok(Branches::Empty),
         Branches::Gather(b1, b2) => Ok(Branches::Gather(
@@ -110,7 +119,7 @@ fn value_field<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     vf: &ValField,
-) -> Result<ValField, ()> {
+) -> Result<ValField, FreeVarsNoNext> {
     Ok(ValField {
         label: value(free_vars, bindings, &vf.label)?,
         value: value(free_vars, bindings, &vf.value)?,
@@ -121,7 +130,7 @@ fn record_val<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     r: &RecordVal,
-) -> Result<RecordVal, ()> {
+) -> Result<RecordVal, FreeVarsNoNext> {
     let rv: Result<_, _> =
         r.0.iter()
             .map(|vf| value_field(free_vars, bindings, vf))
@@ -133,7 +142,7 @@ fn expression<I: Iterator<Item = String>>(
     free_vars: &mut I,
     bindings: &mut Bindings,
     e: &Exp,
-) -> Result<Exp, ()> {
+) -> Result<Exp, FreeVarsNoNext> {
     use Exp::*;
     match e {
         Ret_(_) => unreachable!(),

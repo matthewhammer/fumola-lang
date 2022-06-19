@@ -9,6 +9,8 @@ use crate::ast::{
 
 use std::collections::HashMap;
 
+pub struct ProcNoStep;
+
 /// step a process.
 /// returns None for processes that are blocked, Error, or Halted.
 pub fn proc(
@@ -16,16 +18,16 @@ pub fn proc(
     store: &mut Store,
     proc: &mut Proc,
     spawn: &mut Vec<(Sym, Proc)>,
-) -> Result<(), ()> {
+) -> Result<(), ProcNoStep> {
     let pr = std::mem::replace(proc, Proc::Spawn(Exp::Hole));
     match pr {
         Proc::Error(_, _) => {
             *proc = pr;
-            Err(())
+            Err(ProcNoStep)
         }
         Proc::Halted(_) => {
             *proc = pr;
-            Err(())
+            Err(ProcNoStep)
         }
         Proc::Spawn(e) => {
             *proc = Proc::Running(Running {
@@ -42,7 +44,7 @@ pub fn proc(
         Proc::WaitingForPtr(_, ref s) => match store.0.get(s) {
             None => {
                 *proc = pr;
-                Err(())
+                Err(ProcNoStep)
             }
             Some(_) => {
                 fn resume(pr: Proc) -> Proc {
@@ -68,7 +70,7 @@ pub fn proc(
                     Proc::WaitingForHalt(mut r, sym) => {
                         let v = halted.retval.clone();
                         r.cont = Exp::Ret_(v.clone());
-                        r.trace.0.push(Trace::Link(Val::Proc(sym.clone()), v));
+                        r.trace.0.push(Trace::Link(Val::Proc(sym), v));
                         Proc::Running(r)
                     }
                     _ => unreachable!(),
@@ -77,10 +79,10 @@ pub fn proc(
             }
             Some(_) => {
                 *proc = pr;
-                Err(())
+                Err(ProcNoStep)
             }
         },
-        Proc::Running(mut r) => match running(procs, store, &mut r) {
+        Proc::Running(mut r) => match running(store, &mut r) {
             Ok(()) => {
                 *proc = Proc::Running(r);
                 Ok(())
@@ -164,13 +166,13 @@ pub fn value(env: &Env, v: &Val) -> Result<Val, ValueError> {
 
 /// Try to match closed value against field.
 /// Updates the environment for each pattern-identifier match, even if pattern error.
-pub fn pattern_field(fp: &FieldPat, fs: &Vec<ValField>, env: &mut Env) -> Result<(), PatternError> {
+pub fn pattern_field(fp: &FieldPat, fs: &[ValField], env: &mut Env) -> Result<(), PatternError> {
     for f in fs.iter() {
         if fp.label == f.label {
-            return Ok(pattern(&fp.pattern, f.value.clone(), env)?);
+            return pattern(&fp.pattern, f.value.clone(), env);
         }
     }
-    return Err(PatternError::FieldNotFound(fp.label.clone()));
+    Err(PatternError::FieldNotFound(fp.label.clone()))
 }
 
 /// Try to match closed value against pattern.
@@ -185,7 +187,7 @@ pub fn pattern(p: &Pat, v: Val, env: &mut Env) -> Result<(), PatternError> {
         Pat::Fields(pats) => match v {
             Val::Record(vals) => {
                 for f in pats.0.iter() {
-                    pattern_field(&f, &vals.0, env)?;
+                    pattern_field(f, &vals.0, env)?;
                 }
                 Ok(())
             }
@@ -255,9 +257,8 @@ pub fn into_pointer(v: Val) -> Result<Sym, Error> {
 pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
     let mut r = s;
     for fr in stack.0.iter().rev() {
-        match &fr.cont {
-            FrameCont::Nest(ns) => r = Sym::Nest(Box::new(ns.clone()), Box::new(r)),
-            _ => (),
+        if let FrameCont::Nest(ns) = &fr.cont {
+            r = Sym::Nest(Box::new(ns.clone()), Box::new(r))
         }
     }
     r
@@ -266,19 +267,16 @@ pub fn put_symbol(stack: &Stack, s: Sym) -> Sym {
 /// Empty stack means halting program.  We trace the halting return.
 /// Stack with nest on top means we trace the return from the nest.
 pub fn stack_says_trace_ret(stack: &Stack) -> bool {
-    if stack.0.len() == 0 {
+    if stack.0.is_empty() {
         true
     } else {
-        match stack.0.last().unwrap().cont {
-            FrameCont::Nest(_) => true,
-            _ => false,
-        }
+        matches!(stack.0.last().unwrap().cont, FrameCont::Nest(_))
     }
 }
 
 /// step a running process.
 /// returns None if already Blocked.
-pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), Error> {
+pub fn running(store: &mut Store, r: &mut Running) -> Result<(), Error> {
     // for each Exp form, step it, possibly to an Error.
     use std::mem::replace;
     use Exp::*;
@@ -294,10 +292,10 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
                 r.trace.0.push(Trace::Ret(v.clone()));
             };
             r.cont = Ret_(v);
-            running(procs, store, r)
+            running(store, r)
         }
         Ret_(v) => {
-            if r.stack.0.len() == 0 {
+            if r.stack.0.is_empty() {
                 Err(Error::Signal(Signal::Halt(v)))
             } else {
                 let fr = r
@@ -395,7 +393,7 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
         }
         Extract(_) => unimplemented!(),
         Lambda(pat, e1) => {
-            if r.stack.0.len() == 0 {
+            if r.stack.0.is_empty() {
                 Err(Error::NoStep)
             } else {
                 let fr = r
@@ -416,7 +414,7 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
             }
         }
         Branches(branches) => {
-            if r.stack.0.len() == 0 {
+            if r.stack.0.is_empty() {
                 Err(Error::NoStep)
             } else {
                 let fr = r
@@ -474,7 +472,7 @@ pub fn running(procs: &Procs, store: &mut Store, r: &mut Running) -> Result<(), 
                 None => return Err(Error::Undefined(sym)),
                 Some(v2) => v2.clone(),
             };
-            r.trace.0.push(Trace::Get(sym.clone(), v2.clone()));
+            r.trace.0.push(Trace::Get(sym, v2.clone()));
             r.cont = Ret_(v2);
             Ok(())
         }
@@ -571,7 +569,7 @@ pub fn switch_case(env: &Env, sym: &Sym, cases: Cases) -> Result<Case, Error> {
 
 /// Step the system at most once, if possible.
 pub fn system(sys: &mut System) -> Result<(), Error> {
-    if sys.procs.0.len() == 0 {
+    if sys.procs.0.is_empty() {
         return Err(Error::NoProcs);
     }
     let mut stepped = false;
@@ -582,7 +580,7 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
         let mut p = p.clone(); // to do -- somehow avoid this clone.
         match proc(&sys.procs, &mut sys.store, &mut p, &mut spawn) {
             Ok(()) => stepped = true,
-            Err(()) => (),
+            Err(ProcNoStep) => (),
         };
         next_procs.insert(s.clone(), p);
         for (s, p) in spawn.into_iter() {
@@ -597,18 +595,13 @@ pub fn system(sys: &mut System) -> Result<(), Error> {
         assert!(prior.is_none());
     }
     if stepped {
-        return Ok(());
+        Ok(())
     } else {
-        return Err(Error::NoStep);
+        Err(Error::NoStep)
     }
 }
 
 /// Fully step the system (to extent possible).
 pub fn fully(sys: &mut System) {
-    loop {
-        match system(sys) {
-            Ok(()) => (),
-            Err(_e) => break,
-        }
-    }
+    while let Ok(()) = system(sys) {}
 }
