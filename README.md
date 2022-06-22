@@ -1,2 +1,2 @@
 # fumola-lang
-Fungible Models Language.
+A Fun Modeling Language.
